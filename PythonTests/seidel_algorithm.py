@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from enum import Enum
+from random import shuffle
 
 X_MIN, X_MAX = -10, 10
 Y_MIN, Y_MAX = -10, 10
@@ -55,6 +56,20 @@ class Edge:
         
         t = (y - start_y) / (end_y - start_y)
         return start_x + t * (end_x - start_x)
+    
+
+    def get_ordered_vertices(self) -> tuple[Vertex, Vertex]:
+        if self.start > self.end:
+            return self.end, self.start
+        
+        return self.start, self.end
+    
+
+    def is_vertex_at_the_right(self, vertex:Vertex) -> bool:
+        x_edge = self.get_x_by_y(vertex.y)
+
+        return vertex.x > x_edge
+
 
 
 class Polygon:
@@ -108,12 +123,65 @@ class Node:
         self.parent = parent
 
 
+    def split_by_vertex(self, vertex:Vertex) -> None:
+        assert(self.node_type == NodeType.TRAPEZOID)
+        bottom_trapezoid, top_trapezoid = self.associated_obj.split_by_vertex(vertex)
+
+        self.node_type = NodeType.VERTEX
+        self.associated_obj = vertex
+
+        self.left_child = Node(
+            node_type=NodeType.TRAPEZOID,
+            associated_obj=bottom_trapezoid,
+            parent=self
+        )
+        self.right_child = Node(
+            node_type=NodeType.TRAPEZOID,
+            associated_obj=top_trapezoid,
+            parent=self
+        )
+
+
+    def get_or_insert_vertex(self, vertex:Vertex) -> Node:
+        if self.node_type == NodeType.TRAPEZOID:
+            self.split_by_vertex(vertex)
+
+        if self.node_type == NodeType.VERTEX and self.associated_obj == vertex: 
+            return self
+            
+        if (
+            (
+                self.node_type == NodeType.VERTEX 
+                and vertex > self.associated_obj
+            ) or (
+                self.node_type == NodeType.EDGE 
+                and self.associated_obj.is_vertex_at_the_right(vertex)
+            )
+        ):
+            return self.right_child.get_or_insert_vertex(vertex)
+            
+        return self.left_child.get_or_insert_vertex(vertex)     
+
+
+    def display(self) -> None:
+        if self.node_type == NodeType.TRAPEZOID:
+            self.associated_obj.display()
+            return
+
+        self.left_child.display()
+        self.right_child.display()
+        
+
+
 class Trapezoid:
     def __init__(
             self, 
-            top_vertex:Vertex|None = None, bottom_vertex:Vertex|None = None, 
-            trapezoids_above:list[Trapezoid]|None = None, trapezoids_below:list[Trapezoid]|None = None,
-            left_edge:Edge|None = None, right_edge:Edge|None = None,
+            top_vertex:Vertex|None = None, 
+            bottom_vertex:Vertex|None = None, 
+            trapezoids_above:list[Trapezoid]|None = None, 
+            trapezoids_below:list[Trapezoid]|None = None,
+            left_edge:Edge|None = None, 
+            right_edge:Edge|None = None,
             # tree_position:Node|None = None
         ) -> None:
         self.high = top_vertex
@@ -125,7 +193,17 @@ class Trapezoid:
         # self.tree_position = tree_position
         self.inside = False
 
-    def display(self):
+    
+    def duplicate(self) -> Trapezoid:
+        return Trapezoid(
+            top_vertex=self.high,
+            bottom_vertex = self.low,
+            left_edge=self.left_edge,
+            right_edge=self.right_edge
+        )
+
+
+    def display(self) -> None:
         y_max = Y_MAX if self.high is None else self.high.y
         y_min = Y_MIN if self.low is None else self.low.y
         x_min_high, x_min_low = X_MIN, X_MIN
@@ -148,6 +226,37 @@ class Trapezoid:
             plt.plot([x_min_low, x_max_low], [y_min, y_min], color='green')
 
 
+    def split_by_vertex(self, vertex:Vertex) -> tuple[Trapezoid, Trapezoid]:
+        top_trapezoid = self
+        bottom_trapezoid = self.duplicate()
+
+        top_trapezoid.low = vertex
+        bottom_trapezoid.high = vertex
+
+        top_trapezoid.trapezoids_below = [bottom_trapezoid]
+        bottom_trapezoid.trapezoids_above = [top_trapezoid]
+
+        return (bottom_trapezoid, top_trapezoid)
+
+
+
+def seidel(polygon:Polygon) -> None:
+    edges:list[Edge] = polygon.get_edges()
+    shuffle(edges)
+
+    search_tree = Node(
+        node_type=NodeType.TRAPEZOID,
+        associated_obj=Trapezoid()
+    )    
+
+    for edge in edges:
+        low_vertex, high_vertex = edge.get_ordered_vertices()
+        high_node = search_tree.get_or_insert_vertex(high_vertex)
+        low_node = search_tree.get_or_insert_vertex(low_vertex)
+
+    search_tree.display()
+
+
 
 def main():
     contour = [
@@ -163,6 +272,7 @@ def main():
 
     polygon = Polygon(contour)
     polygon.display()
+    seidel(polygon)
 
     plt.axis('equal')
     plt.show()
