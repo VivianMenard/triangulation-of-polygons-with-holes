@@ -203,8 +203,8 @@ class Trapezoid:
             left_edge:Edge|None = None, 
             right_edge:Edge|None = None
         ) -> None:
-        self.high = top_vertex
-        self.low = bottom_vertex
+        self.top_vertex = top_vertex
+        self.bottom_vertex = bottom_vertex
         self.trapezoids_above = [] if trapezoids_above is None else trapezoids_above
         self.trapezoids_below = [] if trapezoids_below is None else trapezoids_below
         self.left_edge = left_edge
@@ -215,42 +215,42 @@ class Trapezoid:
     
     def duplicate(self) -> Trapezoid:
         return Trapezoid(
-            top_vertex=self.high,
-            bottom_vertex = self.low,
+            top_vertex=self.top_vertex,
+            bottom_vertex = self.bottom_vertex,
             left_edge=self.left_edge,
             right_edge=self.right_edge
         )
 
 
     def display(self) -> None:
-        y_max = Y_MAX if self.high is None else self.high.y
-        y_min = Y_MIN if self.low is None else self.low.y
-        x_min_high, x_min_low = X_MIN, X_MIN
-        x_max_high, x_max_low = X_MAX, X_MAX
+        y_max = Y_MAX if self.top_vertex is None else self.top_vertex.y
+        y_min = Y_MIN if self.bottom_vertex is None else self.bottom_vertex.y
+        x_min_top, x_min_bottom = X_MIN, X_MIN
+        x_max_top, x_max_bottom = X_MAX, X_MAX
 
         if self.left_edge is not None:
-            x_min_high = self.left_edge.get_x_by_y(y_max)
-            x_min_low = self.left_edge.get_x_by_y(y_min)
-            plt.plot([x_min_low, x_min_high], [y_min, y_max], color='green')
+            x_min_top = self.left_edge.get_x_by_y(y_max)
+            x_min_bottom = self.left_edge.get_x_by_y(y_min)
+            plt.plot([x_min_bottom, x_min_top], [y_min, y_max], color='green')
 
         if self.right_edge is not None:
-            x_max_high = self.right_edge.get_x_by_y(y_max)
-            x_max_low = self.right_edge.get_x_by_y(y_min)
-            plt.plot([x_max_low, x_max_high], [y_min, y_max], color='green')
+            x_max_top = self.right_edge.get_x_by_y(y_max)
+            x_max_bottom = self.right_edge.get_x_by_y(y_min)
+            plt.plot([x_max_bottom, x_max_top], [y_min, y_max], color='green')
 
-        if self.high is not None:
-            plt.plot([x_min_high, x_max_high], [y_max, y_max], color='green')
+        if self.top_vertex is not None:
+            plt.plot([x_min_top, x_max_top], [y_max, y_max], color='green')
 
-        if self.low is not None:
-            plt.plot([x_min_low, x_max_low], [y_min, y_min], color='green')
+        if self.bottom_vertex is not None:
+            plt.plot([x_min_bottom, x_max_bottom], [y_min, y_min], color='green')
 
 
     def split_by_vertex(self, vertex:Vertex) -> tuple[Trapezoid, Trapezoid]:
         top_trapezoid = self
         bottom_trapezoid = self.duplicate()
 
-        top_trapezoid.low = vertex
-        bottom_trapezoid.high = vertex
+        top_trapezoid.bottom_vertex = vertex
+        bottom_trapezoid.top_vertex = vertex
 
         top_trapezoid.trapezoids_below = [bottom_trapezoid]
         bottom_trapezoid.trapezoids_above = [top_trapezoid]
@@ -268,9 +268,9 @@ def seidel(polygon:Polygon) -> None:
     )    
 
     for edge in edges:
-        low_vertex, high_vertex = edge.get_ordered_vertices()
-        high_node = search_tree.get_or_insert_vertex(high_vertex)
-        low_node = search_tree.get_or_insert_vertex(low_vertex)
+        bottom_vertex, top_vertex = edge.get_ordered_vertices()
+        top_node = search_tree.get_or_insert_vertex(top_vertex)
+        bottom_node = search_tree.get_or_insert_vertex(bottom_vertex)
 
     search_tree.display()
 
