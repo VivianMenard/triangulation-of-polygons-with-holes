@@ -13,6 +13,9 @@ class Vertex:
 
 
 class Vertex:
+    x:float
+    y:float
+
     def __init__(self, x:float, y:float) -> None:
         self.x = x
         self.y = y
@@ -27,6 +30,9 @@ class Vertex:
 
 
 class Edge:
+    start:Vertex
+    end:Vertex
+
     def __init__(self, start:Vertex, end:Vertex) -> None:
         self.start = start
         self.end = end
@@ -73,6 +79,8 @@ class Edge:
 
 
 class Polygon:
+    vertices:list[Vertex]
+
     def __init__(self, vertices:list[Vertex]) -> None:
         self.vertices = vertices
 
@@ -108,18 +116,23 @@ class Node:
 
 
 class Node:
+    node_type:NodeType
+    associated_obj:Trapezoid|Edge|Vertex
+    left_child:Node|None
+    right_child:Node|None
+    parent:Node|None
+
     def __init__(
         self,
-        node_type:NodeType,
-        associated_obj:Vertex|Edge|Trapezoid,
-        left_child:Node|None = None,
-        right_child:Node|None = None,
+        trapezoid:Trapezoid,
         parent:Node|None = None
     ) -> None:
-        self.node_type = node_type 
-        self.associated_obj = associated_obj
-        self.left_child = left_child
-        self.right_child = right_child
+        # At the time of its creation a Node is always a leaf, ie a Trapezoid node
+        self.node_type = NodeType.TRAPEZOID
+        self.associated_obj = trapezoid
+        trapezoid.associated_node = self
+        self.left_child = None
+        self.right_child = None
         self.parent = parent
 
 
@@ -131,13 +144,11 @@ class Node:
         self.associated_obj = vertex
 
         self.left_child = Node(
-            node_type=NodeType.TRAPEZOID,
-            associated_obj=bottom_trapezoid,
+            trapezoid=bottom_trapezoid,
             parent=self
         )
         self.right_child = Node(
-            node_type=NodeType.TRAPEZOID,
-            associated_obj=top_trapezoid,
+            trapezoid=top_trapezoid,
             parent=self
         )
 
@@ -174,6 +185,15 @@ class Node:
 
 
 class Trapezoid:
+    top_vertex:Vertex|None
+    bottom_vertex:Vertex|None
+    trapezoids_above:list[Trapezoid]
+    trapezoids_below:list[Trapezoid]
+    left_edge:Edge|None
+    right_edge:Edge|None
+    associated_node:Node|None
+    inside:bool
+     
     def __init__(
             self, 
             top_vertex:Vertex|None = None, 
@@ -181,8 +201,7 @@ class Trapezoid:
             trapezoids_above:list[Trapezoid]|None = None, 
             trapezoids_below:list[Trapezoid]|None = None,
             left_edge:Edge|None = None, 
-            right_edge:Edge|None = None,
-            # tree_position:Node|None = None
+            right_edge:Edge|None = None
         ) -> None:
         self.high = top_vertex
         self.low = bottom_vertex
@@ -190,7 +209,7 @@ class Trapezoid:
         self.trapezoids_below = [] if trapezoids_below is None else trapezoids_below
         self.left_edge = left_edge
         self.right_edge = right_edge
-        # self.tree_position = tree_position
+        self.associated_node = None
         self.inside = False
 
     
@@ -245,8 +264,7 @@ def seidel(polygon:Polygon) -> None:
     shuffle(edges)
 
     search_tree = Node(
-        node_type=NodeType.TRAPEZOID,
-        associated_obj=Trapezoid()
+        trapezoid=Trapezoid()
     )    
 
     for edge in edges:
