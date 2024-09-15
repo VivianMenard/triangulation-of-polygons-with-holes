@@ -42,11 +42,11 @@ class Edge:
         self.bottom_vertex, self.top_vertex = self.__get_ordered_vertices()
 
 
-    def display(self) -> None:
+    def display(self, color:str="blue") -> None:
         x = [self.start.x, self.end.x]
         y = [self.start.y, self.end.y]
 
-        plt.plot(x, y, color='blue')
+        plt.plot(x, y, color=color)
 
 
     def get_x_by_y(self, y:float) -> float:
@@ -411,7 +411,7 @@ class Trapezoid:
         )
 
 
-    def display(self) -> None:
+    def display(self, color:str="green") -> None:
         y_max = Y_MAX if self.top_vertex is None else self.top_vertex.y
         y_min = Y_MIN if self.bottom_vertex is None else self.bottom_vertex.y
         x_min_top, x_min_bottom = X_MIN, X_MIN
@@ -420,18 +420,18 @@ class Trapezoid:
         if self.left_edge is not None:
             x_min_top = self.left_edge.get_x_by_y(y_max)
             x_min_bottom = self.left_edge.get_x_by_y(y_min)
-            plt.plot([x_min_bottom, x_min_top], [y_min, y_max], color='green')
+            plt.plot([x_min_bottom, x_min_top], [y_min, y_max], color=color)
 
         if self.right_edge is not None:
             x_max_top = self.right_edge.get_x_by_y(y_max)
             x_max_bottom = self.right_edge.get_x_by_y(y_min)
-            plt.plot([x_max_bottom, x_max_top], [y_min, y_max], color='green')
+            plt.plot([x_max_bottom, x_max_top], [y_min, y_max], color=color)
 
         if self.top_vertex is not None:
-            plt.plot([x_min_top, x_max_top], [y_max, y_max], color='green')
+            plt.plot([x_min_top, x_max_top], [y_max, y_max], color=color)
 
         if self.bottom_vertex is not None:
-            plt.plot([x_min_bottom, x_max_bottom], [y_min, y_min], color='green')
+            plt.plot([x_min_bottom, x_max_bottom], [y_min, y_min], color=color)
 
 
     def split_by_vertex(self, vertex:Vertex) -> tuple[Trapezoid, Trapezoid]:
