@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+
+.vscode/c_cpp_properties.json
