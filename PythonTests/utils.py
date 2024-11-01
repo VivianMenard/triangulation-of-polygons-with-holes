@@ -1,2 +1,4 @@
 def replace(l:list, to_replace, replace_by) -> None:
-    l = [replace_by if elem == to_replace else elem for elem in l]
+    for i in range(len(l)):
+        if l[i] == to_replace:
+            l[i] = replace_by
