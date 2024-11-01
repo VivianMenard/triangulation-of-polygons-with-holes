@@ -74,6 +74,13 @@ class Edge:
         x_edge = self.get_x_by_y(vertex.y)
 
         return vertex.x > x_edge
+    
+
+    def get_mid_point(self) -> Vertex:
+        return Vertex(
+            (self.start.x + self.end.x)/2,
+            (self.start.y + self.end.y)/2
+        )
 
 
 
@@ -170,16 +177,16 @@ class Node:
         )
 
 
-    def get_or_insert_vertex(self, vertex:Vertex) -> tuple[Node, bool]:
+    def try_insert_vertex(self, vertex:Vertex) -> bool: # todo: avoid to use it when vertex already in the tree, using a set or something like that
         """
-        Returns a tuple (node associated with the vertex, is the vertex just inserted).
+        Returns True if the vertex has been inserted, False if it was already in the tree
         """
         if self.node_type == NodeType.TRAPEZOID:
             self.split_by_vertex(vertex)
-            return self, True
+            return True
 
         if self.node_type == NodeType.VERTEX and self.associated_obj == vertex: 
-            return self, False
+            return False
             
         if (
             (
@@ -190,9 +197,27 @@ class Node:
                 and self.associated_obj.is_vertex_at_the_right(vertex)
             )
         ):
-            return self.right_child.get_or_insert_vertex(vertex)
+            return self.right_child.try_insert_vertex(vertex)
             
-        return self.left_child.get_or_insert_vertex(vertex)     
+        return self.left_child.try_insert_vertex(vertex)     
+    
+
+    def search_area_containing_vertex(self, vertex:Vertex) -> Node: # to factorize with the above one
+        if self.node_type == NodeType.TRAPEZOID:
+            return self
+        
+        if (
+            (
+                self.node_type == NodeType.VERTEX 
+                and vertex > self.associated_obj
+            ) or (
+                self.node_type == NodeType.EDGE 
+                and self.associated_obj.is_vertex_at_the_right(vertex)
+            )
+        ):
+            return self.right_child.search_area_containing_vertex(vertex)
+            
+        return self.left_child.search_area_containing_vertex(vertex)     
 
 
     def display(self, debug:bool=False) -> None:
@@ -203,53 +228,54 @@ class Node:
         self.left_child.display(debug)
         self.right_child.display(debug)
 
-
-    def find_start_node(self, edge:Edge) -> Node:
-        """
-        Finds the node corresponding to the first trapezoid (the highest one) to cut to insert the edge.
-        Needs to be called on the node representing the top vertex of the edge to insert.
-        """
-        assert(self.node_type == NodeType.VERTEX)
-        assert(self.associated_obj == edge.top_vertex)
-
-        return self.left_child.search_start_node(edge.bottom_vertex)
-
-
-    def search_start_node(self, bottom_vertex:Vertex) -> Node:
-        match self.node_type:
-            case NodeType.TRAPEZOID:
-                return self
-            case NodeType.VERTEX:
-                return self.right_child.search_start_node(bottom_vertex)
-            case NodeType.EDGE: # is that correct ?
-                return (
-                    self.right_child if self.associated_obj.is_vertex_at_the_right(bottom_vertex) 
-                    else self.left_child
-                ).search_start_node(bottom_vertex)
-
     
     def insert_edge(self, edge:Edge, top_vertex_just_inserted:bool, bottom_vertex_just_inserted:bool) -> None:
         assert(self.node_type == NodeType.TRAPEZOID)
-        assert(self.associated_obj.top_vertex == edge.top_vertex)
 
-        nodes_to_split:list[Node] = [self]
+        nodes_to_split_down_direction:list[Node] = []
         current_trap:Trapezoid = self.associated_obj
 
         while current_trap.bottom_vertex != edge.bottom_vertex:
-            match len(current_trap.trapezoids_below):
+            below = current_trap.trapezoids_below
+            match len(below):
                 case 1:
-                    current_trap = current_trap.trapezoids_below[0]
+                    current_trap = below[0]
 
                 case 2:
-                    left_trap_below = current_trap.trapezoids_below[0]
+                    left_trap_below = below[0]
                     left_trap_top_rightmost_pt = left_trap_below.get_extreme_point(top=True, right=True)
                     trap_index = 0 if edge.is_vertex_at_the_right(left_trap_top_rightmost_pt) else 1
-                    current_trap = current_trap.trapezoids_below[trap_index]
+                    current_trap = below[trap_index]
 
                 case _:
-                    raise ValueError("Very strange...") # error ??? (avec 0 comme len)
+                    raise ValueError("Very strange...")
 
-            nodes_to_split.append(current_trap.associated_node)
+            nodes_to_split_down_direction.append(current_trap.associated_node)
+
+
+        nodes_to_split_up_direction:list[Node] = []
+        current_trap:Trapezoid = self.associated_obj
+
+        while current_trap.top_vertex != edge.top_vertex:
+            above = current_trap.trapezoids_above
+            match len(above):
+                case 1:
+                    current_trap = above[0]
+
+                case 2:
+                    left_trap_above = above[0]
+                    left_trap_bottom_rightmost_pt = left_trap_above.get_extreme_point(top=False, right=True)
+                    trap_index = 0 if edge.is_vertex_at_the_right(left_trap_bottom_rightmost_pt) else 1
+                    current_trap = above[trap_index]
+
+                case _:
+                    raise ValueError("Very strange...")
+
+            nodes_to_split_up_direction.append(current_trap.associated_node)
+
+        nodes_to_split_up_direction.reverse()
+
+        nodes_to_split = nodes_to_split_up_direction + [self] + nodes_to_split_down_direction
 
         created_trap_couples:list[tuple[Trapezoid, Trapezoid]] = []
         for node_to_split in nodes_to_split:
@@ -494,15 +520,19 @@ def seidel(polygon:Polygon, debug:bool=False) -> None:
 
     search_tree = Node(
         trapezoid=Trapezoid()
-    )    
+    )
 
     for edge in edges:
-        top_vertex_node, top_vertex_just_inserted = search_tree.get_or_insert_vertex(edge.top_vertex)
-        _, bottom_vertex_just_inserted = search_tree.get_or_insert_vertex(edge.bottom_vertex)
+        top_vertex_just_inserted = search_tree.try_insert_vertex(edge.top_vertex)
+        bottom_vertex_just_inserted = search_tree.try_insert_vertex(edge.bottom_vertex)
 
-        start_node = top_vertex_node.find_start_node(edge)
+        start_node = search_tree.search_area_containing_vertex(edge.get_mid_point())
+
         start_node.insert_edge(
-            edge, top_vertex_just_inserted, bottom_vertex_just_inserted)
+            edge, 
+            top_vertex_just_inserted, 
+            bottom_vertex_just_inserted
+        )
 
     search_tree.display(debug)
 
