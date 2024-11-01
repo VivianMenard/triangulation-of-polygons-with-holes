@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from enum import Enum
 from random import shuffle
 from utils import replace
+from typing import ClassVar
 
 X_MIN, X_MAX = -10, 10
 Y_MIN, Y_MAX = -10, 10
@@ -194,13 +195,13 @@ class Node:
         return self.left_child.get_or_insert_vertex(vertex)     
 
 
-    def display(self) -> None:
+    def display(self, debug:bool=False) -> None:
         if self.node_type == NodeType.TRAPEZOID:
-            self.associated_obj.display()
+            self.associated_obj.display(debug=debug)
             return
 
-        self.left_child.display()
-        self.right_child.display()
+        self.left_child.display(debug)
+        self.right_child.display(debug)
 
 
     def find_start_node(self, edge:Edge) -> Node:
@@ -374,6 +375,8 @@ class Node:
 
 
 class Trapezoid:
+    next_id:ClassVar[int] = 0
+
     top_vertex:Vertex|None
     bottom_vertex:Vertex|None
     trapezoids_above:list[Trapezoid] # up to 2 trap above, if 2 the first is the one at the left
@@ -392,6 +395,9 @@ class Trapezoid:
             left_edge:Edge|None = None, 
             right_edge:Edge|None = None
         ) -> None:
+        self.id = Trapezoid.next_id
+        Trapezoid.next_id+=1
+
         self.top_vertex = top_vertex
         self.bottom_vertex = bottom_vertex
         self.trapezoids_above = [] if trapezoids_above is None else trapezoids_above
@@ -411,7 +417,7 @@ class Trapezoid:
         )
 
 
-    def display(self, color:str="green") -> None:
+    def display(self, color:str="green", debug:bool=False) -> None:
         y_max = Y_MAX if self.top_vertex is None else self.top_vertex.y
         y_min = Y_MIN if self.bottom_vertex is None else self.bottom_vertex.y
         x_min_top, x_min_bottom = X_MIN, X_MIN
@@ -432,6 +438,17 @@ class Trapezoid:
 
         if self.bottom_vertex is not None:
             plt.plot([x_min_bottom, x_max_bottom], [y_min, y_min], color=color)
+
+        if debug:
+            y_average = (y_min + y_max) / 2
+            x_average = (x_min_bottom + x_min_top + x_max_bottom + x_max_top) / 4
+            
+            above_str = ', '.join([str(trap.id) for trap in self.trapezoids_above])
+            below_str = ', '.join([str(trap.id) for trap in self.trapezoids_below])
+            infos = f"{self.id}\nab: [{above_str}], be: [{below_str}]"
+
+            plt.text(x_average, y_average, infos, ha='center', va='center', fontsize=8, color="black")
+
 
 
     def split_by_vertex(self, vertex:Vertex) -> tuple[Trapezoid, Trapezoid]:
@@ -471,7 +488,7 @@ class Trapezoid:
 
 
 
-def seidel(polygon:Polygon) -> None:
+def seidel(polygon:Polygon, debug:bool=False) -> None:
     edges:list[Edge] = polygon.get_edges()
     shuffle(edges)
 
@@ -487,11 +504,13 @@ def seidel(polygon:Polygon) -> None:
         start_node.insert_edge(
             edge, top_vertex_just_inserted, bottom_vertex_just_inserted)
 
-    search_tree.display()
+    search_tree.display(debug)
 
 
 
 def main():
+    debug = True
+
     contour = [
         Vertex(-5.14,4.73),
         Vertex(-5.68,2.31),
@@ -505,9 +524,11 @@ def main():
 
     polygon = Polygon(contour)
     polygon.display()
-    seidel(polygon)
+    seidel(polygon, debug)
 
     plt.axis('equal')
+    plt.xlim(X_MIN, X_MAX)
+    plt.ylim(Y_MIN, Y_MAX)
     plt.show()
 
 
