@@ -296,7 +296,7 @@ class Node:
                 replace(first_trap_left.trapezoids_above[0].trapezoids_below, first_trap_right, first_trap_left)
 
             else: # the new edge just extend an old edge above
-                assert(len(first_trap_right.trapezoids_above) == 2) # error ??? avec 1 mais pas tout le temps
+                assert(len(first_trap_right.trapezoids_above) == 2)
                 left_above, right_above = first_trap_right.trapezoids_above
                 first_trap_left.trapezoids_above = [left_above]
                 first_trap_right.trapezoids_above = [right_above]
@@ -325,7 +325,7 @@ class Node:
                 replace(last_trap_left.trapezoids_below[0].trapezoids_above, last_trap_right, last_trap_left)
 
             else: # the new edge just extend an old edge below
-                assert(len(last_trap_right.trapezoids_below) == 2) # error ??? avec 1 mais pas tout le temps
+                assert(len(last_trap_right.trapezoids_below) == 2)
                 left_below, right_below = last_trap_right.trapezoids_below
                 last_trap_left.trapezoids_below = [left_below]
                 last_trap_right.trapezoids_below = [right_below]
