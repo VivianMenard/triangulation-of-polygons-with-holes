@@ -40,7 +40,7 @@ class Edge:
     def __init__(self, start:Vertex, end:Vertex) -> None:
         self.start = start
         self.end = end
-        self.bottom_vertex, self.top_vertex = self.__get_ordered_vertices()
+        self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
 
 
     def display(self, color:str="blue") -> None:
@@ -63,7 +63,7 @@ class Edge:
         return start_x + t * (end_x - start_x)
     
 
-    def __get_ordered_vertices(self) -> tuple[Vertex, Vertex]:
+    def get_ordered_vertices(self) -> tuple[Vertex, Vertex]:
         if self.start > self.end:
             return self.end, self.start
         
@@ -177,34 +177,16 @@ class Node:
         )
 
 
-    def try_insert_vertex(self, vertex:Vertex) -> bool: # todo: avoid to use it when vertex already in the tree, using a set or something like that
-        """
-        Returns True if the vertex has been inserted, False if it was already in the tree
-        """
-        if self.node_type == NodeType.TRAPEZOID:
-            self.split_by_vertex(vertex)
-            return True
-
-        if self.node_type == NodeType.VERTEX and self.associated_obj == vertex: 
-            return False
-            
-        if (
-            (
-                self.node_type == NodeType.VERTEX 
-                and vertex > self.associated_obj
-            ) or (
-                self.node_type == NodeType.EDGE 
-                and self.associated_obj.is_vertex_at_the_right(vertex)
-            )
-        ):
-            return self.right_child.try_insert_vertex(vertex)
-            
-        return self.left_child.try_insert_vertex(vertex)     
+    def insert_vertex(self, vertex:Vertex) -> None:
+        area = self.search_area_containing_vertex(vertex)
+        area.split_by_vertex(vertex)
     
 
-    def search_area_containing_vertex(self, vertex:Vertex) -> Node: # to factorize with the above one
+    def search_area_containing_vertex(self, vertex:Vertex) -> Node:
         if self.node_type == NodeType.TRAPEZOID:
             return self
+
+        relevant_child = self.left_child
         
         if (
             (
@@ -215,9 +197,9 @@ class Node:
                 and self.associated_obj.is_vertex_at_the_right(vertex)
             )
         ):
-            return self.right_child.search_area_containing_vertex(vertex)
-            
-        return self.left_child.search_area_containing_vertex(vertex)     
+            relevant_child = self.right_child
+
+        return relevant_child.search_area_containing_vertex(vertex)
 
 
     def display(self, debug:bool=False) -> None:
@@ -521,17 +503,25 @@ def seidel(polygon:Polygon, debug:bool=False) -> None:
     search_tree = Node(
         trapezoid=Trapezoid()
     )
+    already_inserted:set[Vertex] = set()
 
     for edge in edges:
-        top_vertex_just_inserted = search_tree.try_insert_vertex(edge.top_vertex)
-        bottom_vertex_just_inserted = search_tree.try_insert_vertex(edge.bottom_vertex)
+        bottom_vertex, top_vertex = edge.get_ordered_vertices()
+        
+        if top_should_be_inserted := top_vertex not in already_inserted:
+            search_tree.insert_vertex(top_vertex)
+            already_inserted.add(top_vertex)
+
+        if bottom_should_be_inserted := bottom_vertex not in already_inserted:
+            search_tree.insert_vertex(bottom_vertex)
+            already_inserted.add(bottom_vertex)
 
         start_node = search_tree.search_area_containing_vertex(edge.get_mid_point())
 
         start_node.insert_edge(
             edge, 
-            top_vertex_just_inserted, 
-            bottom_vertex_just_inserted
+            top_should_be_inserted,
+            bottom_should_be_inserted
         )
 
     search_tree.display(debug)
