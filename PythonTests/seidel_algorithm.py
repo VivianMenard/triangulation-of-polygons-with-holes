@@ -142,6 +142,16 @@ class Node:
         self.parent = parent
 
 
+    def replace_by_another_node_in_tree(self, new_node:Node) -> None:
+        assert(self.node_type == NodeType.TRAPEZOID)
+
+        if self.parent.left_child == self:
+            self.parent.left_child = new_node
+        else: # I think that a same node can't be left and right child of a same parent but not sure for the moment...
+            assert(self.parent.right_child == self)
+            self.parent.right_child = new_node
+
+
     def split_by_vertex(self, vertex:Vertex) -> None:
         assert(self.node_type == NodeType.TRAPEZOID)
         bottom_trapezoid, top_trapezoid = self.associated_obj.split_by_vertex(vertex)
@@ -157,6 +167,7 @@ class Node:
             trapezoid=top_trapezoid,
             parent=self
         )
+
 
     def split_by_edge(self, edge:Edge, created_trap_couples:list[tuple[Trapezoid, Trapezoid]]) -> None:
         assert(self.node_type == NodeType.TRAPEZOID)
@@ -265,7 +276,7 @@ class Node:
 
         self.manage_adjacents_trap_after_edge_split(edge, created_trap_couples, top_vertex_just_inserted, bottom_vertex_just_inserted)
 
-        # merge trap on top of each other with same left and right edges
+        self.merge_trapezoids_if_necessary(created_trap_couples)
 
 
     def manage_adjacents_trap_after_edge_split(
@@ -379,6 +390,29 @@ class Node:
 
                     top_left_trap.trapezoids_below = [bottom_left_trap]
                     bottom_left_trap.trapezoids_above = [top_left_trap]
+
+
+    def merge_trapezoids_if_necessary(self,created_trap_couples:list[tuple[Trapezoid, Trapezoid]]) -> None:
+        """
+        The insertion of an edge can create stacked trapezoids that share the same left and right edes, these function
+        detect them and merge them.
+        """
+        for left_or_right in [0,1]:
+            distance_to_top_neighbor = 1 
+            # TODO :when we merge top trap the top one is the one we keep, if we keep the bottom we could remove that
+            # another method could be to iterate in reverse order
+
+            for trap_couple_index in range(1, len(created_trap_couples)):
+                top_trap = created_trap_couples[trap_couple_index - distance_to_top_neighbor][left_or_right]
+                bottom_trap = created_trap_couples[trap_couple_index][left_or_right]
+
+                # maybe we can avoid doing the two comparison as we know the the splitting edge is shared
+                if top_trap.left_edge == bottom_trap.left_edge and top_trap.right_edge == bottom_trap.right_edge:
+                    Trapezoid.merge(top_trap, bottom_trap)
+                    distance_to_top_neighbor += 1
+
+                else:
+                    distance_to_top_neighbor = 1
         
 
 
@@ -414,6 +448,25 @@ class Trapezoid:
         self.right_edge = right_edge
         self.associated_node = None
         self.inside = False
+
+    
+    @classmethod
+    def merge(cls, top_trap:Trapezoid, bottom_trap:Trapezoid) -> None:
+        # TODO: keep the bottom one instead of the top one
+        assert(
+            top_trap in bottom_trap.trapezoids_above
+            and bottom_trap in top_trap.trapezoids_below
+        )
+        assert(top_trap.left_edge == bottom_trap.left_edge)
+        assert(top_trap.right_edge == bottom_trap.right_edge)
+
+        top_trap.bottom_vertex = bottom_trap.bottom_vertex
+        top_trap.trapezoids_below = bottom_trap.trapezoids_below.copy() # I don't know if copy in necessary here
+
+        for trap in bottom_trap.trapezoids_below:
+            replace(trap.trapezoids_above, bottom_trap, top_trap)
+
+        bottom_trap.associated_node.replace_by_another_node_in_tree(top_trap.associated_node)
 
     
     def duplicate(self) -> Trapezoid:
@@ -543,7 +596,7 @@ def main():
     ]
 
     polygon = Polygon(contour)
-    polygon.display()
+    # polygon.display()
     seidel(polygon, debug)
 
     plt.axis('equal')
