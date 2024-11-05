@@ -399,7 +399,7 @@ class Node:
         """
         for left_or_right in [0,1]:
             distance_to_top_neighbor = 1 
-            # TODO :when we merge top trap the top one is the one we keep, if we keep the bottom we could remove that
+            # When we merge top trap the top one is the one we keep, if we keep the bottom we could remove that
             # another method could be to iterate in reverse order
 
             for trap_couple_index in range(1, len(created_trap_couples)):
@@ -464,7 +464,6 @@ class Trapezoid:
     
     @classmethod
     def merge(cls, top_trap:Trapezoid, bottom_trap:Trapezoid) -> None:
-        # TODO: keep the bottom one instead of the top one
         assert(
             top_trap in bottom_trap.trapezoids_above
             and bottom_trap in top_trap.trapezoids_below
