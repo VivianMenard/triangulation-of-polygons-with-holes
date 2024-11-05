@@ -412,8 +412,20 @@ class Node:
                     distance_to_top_neighbor += 1
 
                 else:
-                    distance_to_top_neighbor = 1
-        
+                    distance_to_top_neighbor = 1        
+
+
+    def get_all_traps(self, trapezoids_acc:list[Trapezoid]|None = None)->None:
+        if trapezoids_acc is None:
+            trapezoids_acc = []
+
+        if self.node_type == NodeType.TRAPEZOID:
+            trapezoids_acc.append(self.associated_obj)
+            return
+
+        self.left_child.get_all_traps(trapezoids_acc)
+        self.right_child.get_all_traps(trapezoids_acc)
+
 
 
 class Trapezoid:
@@ -548,8 +560,20 @@ class Trapezoid:
         return Vertex(extreme_x, extreme_y)
 
 
+    def check_neighbors(self) -> bool:
+        for trap in self.trapezoids_below:
+            if self not in trap.trapezoids_above:
+                return False
 
-def seidel(polygon:Polygon, debug:bool=False) -> None:
+        for trap in self.trapezoids_above:
+            if self not in trap.trapezoids_below:
+                return False
+
+        return True
+
+
+
+def seidel(polygon:Polygon, debug:bool=False) -> Node:
     edges:list[Edge] = polygon.get_edges()
     shuffle(edges)
 
@@ -579,6 +603,20 @@ def seidel(polygon:Polygon, debug:bool=False) -> None:
 
     search_tree.display(debug)
 
+    return search_tree
+
+
+
+def check_trapezoidation(search_tree:Node) -> bool:
+    all_traps:list[Trapezoid] = []
+    search_tree.get_all_traps(all_traps)
+
+    for trap in all_traps:
+        if not trap.check_neighbors():
+            return False
+
+    return True
+
 
 
 def main():
@@ -597,7 +635,13 @@ def main():
 
     polygon = Polygon(contour)
     # polygon.display()
-    seidel(polygon, debug)
+
+    search_tree = seidel(polygon, debug)
+    
+    if check_trapezoidation(search_tree):
+        print("Trapezoidation: Correct")
+    else:
+        print("Error in Trapezoidation")
 
     plt.axis('equal')
     plt.xlim(X_MIN, X_MAX)
