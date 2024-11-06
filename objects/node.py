@@ -1,137 +1,26 @@
-import matplotlib.pyplot as plt
-from enum import Enum
-from random import shuffle
+from __future__ import annotations
+
+from objects.vertex import Vertex
+from objects.edge import Edge
+from objects.trapezoid import Trapezoid
+
 from utils import replace
-from typing import ClassVar
-
-X_MIN, X_MAX = -10, 10
-Y_MIN, Y_MAX = -10, 10
-
-
-
-class Vertex:
-    pass
-
-
-
-class Vertex:
-    x:float
-    y:float
-
-    def __init__(self, x:float, y:float) -> None:
-        self.x = x
-        self.y = y
-
-
-    def __gt__(self, other:Vertex) -> bool:
-        return (
-            self.y > other.y or 
-            (self.y == other.y and self.x > other.x)
-        )
-
-
-
-class Edge:
-    start:Vertex
-    end:Vertex
-    bottom_vertex:Vertex
-    top_vertex:Vertex
-
-    def __init__(self, start:Vertex, end:Vertex) -> None:
-        self.start = start
-        self.end = end
-        self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
-
-
-    def display(self, color:str="blue") -> None:
-        x = [self.start.x, self.end.x]
-        y = [self.start.y, self.end.y]
-
-        plt.plot(x, y, color=color)
-
-
-    def get_x_by_y(self, y:float) -> float:
-        start_x = self.start.x
-        end_x = self.end.x
-        start_y = self.start.y
-        end_y = self.end.y
-
-        if (start_y == end_y):
-            return (start_x + end_x)/2
-        
-        t = (y - start_y) / (end_y - start_y)
-        return start_x + t * (end_x - start_x)
-    
-
-    def get_ordered_vertices(self) -> tuple[Vertex, Vertex]:
-        if self.start > self.end:
-            return self.end, self.start
-        
-        return self.start, self.end
-    
-
-    def is_vertex_at_the_right(self, vertex:Vertex) -> bool:
-        x_edge = self.get_x_by_y(vertex.y)
-
-        return vertex.x > x_edge
-    
-
-    def get_mid_point(self) -> Vertex:
-        return Vertex(
-            (self.start.x + self.end.x)/2,
-            (self.start.y + self.end.y)/2
-        )
-
-
-
-class Polygon:
-    vertices:list[Vertex]
-
-    def __init__(self, vertices:list[Vertex]) -> None:
-        self.vertices = vertices
-
-
-    def get_edges(self) -> list[Edge]:
-        return [
-            Edge(self.vertices[i], self.vertices[(i+1)%len(self.vertices)]) 
-            for i in range(len(self.vertices))
-        ]
-    
-
-    def display(self) -> None:
-        for edge in self.get_edges():
-            edge.display()
-
-
-
-class Trapezoid:
-    pass
-
-
-
-class NodeType(Enum):
-    VERTEX = 0
-    EDGE = 1
-    TRAPEZOID = 2
-
-
-
-class Node:
-    pass
+from constants import NodeType
 
 
 
 class Node:
     node_type:NodeType
     associated_obj:Trapezoid|Edge|Vertex
-    left_child:Node|None
-    right_child:Node|None
-    parent:Node|None
+    left_child:"Node"|None
+    right_child:"Node"|None
+    parent:"Node"|None
+
 
     def __init__(
         self,
         trapezoid:Trapezoid,
-        parent:Node|None = None
+        parent:"Node"|None = None
     ) -> None:
         # At the time of its creation a Node is always a leaf, ie a Trapezoid node
         self.node_type = NodeType.TRAPEZOID
@@ -142,7 +31,7 @@ class Node:
         self.parent = parent
 
 
-    def replace_by_another_node_in_tree(self, new_node:Node) -> None:
+    def replace_by_another_node_in_tree(self, new_node:"Node") -> None:
         assert(self.node_type == NodeType.TRAPEZOID)
 
         if self.parent.left_child == self:
@@ -193,7 +82,7 @@ class Node:
         area.split_by_vertex(vertex)
     
 
-    def search_area_containing_vertex(self, vertex:Vertex) -> Node:
+    def search_area_containing_vertex(self, vertex:Vertex) -> "Node":
         if self.node_type == NodeType.TRAPEZOID:
             return self
 
@@ -225,7 +114,7 @@ class Node:
     def insert_edge(self, edge:Edge, top_vertex_just_inserted:bool, bottom_vertex_just_inserted:bool) -> None:
         assert(self.node_type == NodeType.TRAPEZOID)
 
-        nodes_to_split_down_direction:list[Node] = []
+        nodes_to_split_down_direction:list["Node"] = []
         current_trap:Trapezoid = self.associated_obj
 
         while current_trap.bottom_vertex != edge.bottom_vertex:
@@ -245,8 +134,7 @@ class Node:
 
             nodes_to_split_down_direction.append(current_trap.associated_node)
 
-
-        nodes_to_split_up_direction:list[Node] = []
+        nodes_to_split_up_direction:list["Node"] = []
         current_trap:Trapezoid = self.associated_obj
 
         while current_trap.top_vertex != edge.top_vertex:
@@ -312,7 +200,6 @@ class Node:
                 first_trap_left.trapezoids_above = [left_above]
                 first_trap_right.trapezoids_above = [right_above]
                 replace(left_above.trapezoids_below, first_trap_right, first_trap_left)
-
 
 
         last_trap_left, last_trap_right = created_trap_couples[-1]
@@ -425,229 +312,3 @@ class Node:
 
         self.left_child.get_all_traps(trapezoids_acc)
         self.right_child.get_all_traps(trapezoids_acc)
-
-
-
-class Trapezoid:
-    next_id:ClassVar[int] = 0
-
-    top_vertex:Vertex|None
-    bottom_vertex:Vertex|None
-    trapezoids_above:list[Trapezoid] # up to 2 trap above, if 2 the first is the one at the left
-    trapezoids_below:list[Trapezoid] # up to 2 trap below, if 2 the first is the one at the left
-    left_edge:Edge|None
-    right_edge:Edge|None
-    associated_node:Node|None
-    inside:bool
-     
-    def __init__(
-            self, 
-            top_vertex:Vertex|None = None, 
-            bottom_vertex:Vertex|None = None, 
-            trapezoids_above:list[Trapezoid]|None = None, 
-            trapezoids_below:list[Trapezoid]|None = None,
-            left_edge:Edge|None = None, 
-            right_edge:Edge|None = None
-        ) -> None:
-        self.id = Trapezoid.next_id
-        Trapezoid.next_id+=1
-
-        self.top_vertex = top_vertex
-        self.bottom_vertex = bottom_vertex
-        self.trapezoids_above = [] if trapezoids_above is None else trapezoids_above
-        self.trapezoids_below = [] if trapezoids_below is None else trapezoids_below
-        self.left_edge = left_edge
-        self.right_edge = right_edge
-        self.associated_node = None
-        self.inside = False
-
-    
-    @classmethod
-    def merge(cls, top_trap:Trapezoid, bottom_trap:Trapezoid) -> None:
-        assert(
-            top_trap in bottom_trap.trapezoids_above
-            and bottom_trap in top_trap.trapezoids_below
-        )
-        assert(top_trap.left_edge == bottom_trap.left_edge)
-        assert(top_trap.right_edge == bottom_trap.right_edge)
-
-        top_trap.bottom_vertex = bottom_trap.bottom_vertex
-        top_trap.trapezoids_below = bottom_trap.trapezoids_below.copy() # I don't know if copy in necessary here
-
-        for trap in bottom_trap.trapezoids_below:
-            replace(trap.trapezoids_above, bottom_trap, top_trap)
-
-        bottom_trap.associated_node.replace_by_another_node_in_tree(top_trap.associated_node)
-
-    
-    def duplicate(self) -> Trapezoid:
-        return Trapezoid(
-            top_vertex=self.top_vertex,
-            bottom_vertex = self.bottom_vertex,
-            left_edge=self.left_edge,
-            right_edge=self.right_edge
-        )
-
-
-    def display(self, color:str="green", debug:bool=False) -> None:
-        y_max = Y_MAX if self.top_vertex is None else self.top_vertex.y
-        y_min = Y_MIN if self.bottom_vertex is None else self.bottom_vertex.y
-        x_min_top, x_min_bottom = X_MIN, X_MIN
-        x_max_top, x_max_bottom = X_MAX, X_MAX
-
-        if self.left_edge is not None:
-            x_min_top = self.left_edge.get_x_by_y(y_max)
-            x_min_bottom = self.left_edge.get_x_by_y(y_min)
-            plt.plot([x_min_bottom, x_min_top], [y_min, y_max], color=color)
-
-        if self.right_edge is not None:
-            x_max_top = self.right_edge.get_x_by_y(y_max)
-            x_max_bottom = self.right_edge.get_x_by_y(y_min)
-            plt.plot([x_max_bottom, x_max_top], [y_min, y_max], color=color)
-
-        if self.top_vertex is not None:
-            plt.plot([x_min_top, x_max_top], [y_max, y_max], color=color)
-
-        if self.bottom_vertex is not None:
-            plt.plot([x_min_bottom, x_max_bottom], [y_min, y_min], color=color)
-
-        if debug:
-            y_average = (y_min + y_max) / 2
-            x_average = (x_min_bottom + x_min_top + x_max_bottom + x_max_top) / 4
-            
-            above_str = ', '.join([str(trap.id) for trap in self.trapezoids_above])
-            below_str = ', '.join([str(trap.id) for trap in self.trapezoids_below])
-            infos = f"{self.id}\nab: [{above_str}], be: [{below_str}]"
-
-            plt.text(x_average, y_average, infos, ha='center', va='center', fontsize=8, color="black")
-
-
-
-    def split_by_vertex(self, vertex:Vertex) -> tuple[Trapezoid, Trapezoid]:
-        top_trapezoid = self
-        bottom_trapezoid = self.duplicate()
-
-        top_trapezoid.bottom_vertex = vertex
-        bottom_trapezoid.top_vertex = vertex
-
-        # top_trapezoid = self -> no need to change trapezoids_above
-        bottom_trapezoid.trapezoids_above = [top_trapezoid]
-        bottom_trapezoid.trapezoids_below = self.trapezoids_below.copy()
-        for trap in self.trapezoids_below:
-            replace(trap.trapezoids_above, self, bottom_trapezoid)
-        top_trapezoid.trapezoids_below = [bottom_trapezoid]
-
-        return (bottom_trapezoid, top_trapezoid)
-    
-    def split_by_edge(self, edge:Edge) -> tuple[Trapezoid, Trapezoid]:
-        right_trapezoid = self
-        left_trapezoid = self.duplicate()
-
-        left_trapezoid.right_edge = edge
-        right_trapezoid.left_edge = edge
-
-        return (left_trapezoid, right_trapezoid)
-
-
-    def get_extreme_point(self, top:bool, right:bool) -> Vertex:
-        relevant_vertex = self.top_vertex if top else self.bottom_vertex
-        relevant_edge = self.right_edge if right else self.left_edge
-
-        extreme_y = relevant_vertex.y if relevant_vertex else (Y_MAX if top else Y_MIN)
-        extreme_x = relevant_edge.get_x_by_y(extreme_y) if relevant_edge else (X_MAX if right else X_MIN)
-
-        return Vertex(extreme_x, extreme_y)
-
-
-    def check_neighbors(self) -> bool:
-        for trap in self.trapezoids_below:
-            if self not in trap.trapezoids_above:
-                return False
-
-        for trap in self.trapezoids_above:
-            if self not in trap.trapezoids_below:
-                return False
-
-        return True
-
-
-
-def seidel(polygon:Polygon, debug:bool=False) -> Node:
-    edges:list[Edge] = polygon.get_edges()
-    shuffle(edges)
-
-    search_tree = Node(
-        trapezoid=Trapezoid()
-    )
-    already_inserted:set[Vertex] = set()
-
-    for edge in edges:
-        bottom_vertex, top_vertex = edge.get_ordered_vertices()
-        
-        if top_should_be_inserted := top_vertex not in already_inserted:
-            search_tree.insert_vertex(top_vertex)
-            already_inserted.add(top_vertex)
-
-        if bottom_should_be_inserted := bottom_vertex not in already_inserted:
-            search_tree.insert_vertex(bottom_vertex)
-            already_inserted.add(bottom_vertex)
-
-        start_node = search_tree.search_area_containing_vertex(edge.get_mid_point())
-
-        start_node.insert_edge(
-            edge, 
-            top_should_be_inserted,
-            bottom_should_be_inserted
-        )
-
-    search_tree.display(debug)
-
-    return search_tree
-
-
-
-def check_trapezoidation(search_tree:Node) -> bool:
-    all_traps:list[Trapezoid] = []
-    search_tree.get_all_traps(all_traps)
-
-    for trap in all_traps:
-        if not trap.check_neighbors():
-            return False
-
-    return True
-
-
-
-def main():
-    debug = True
-
-    contour = [
-        Vertex(-5.14,4.73),
-        Vertex(-5.68,2.31),
-        Vertex(-7.42,3.65),
-        Vertex(-8.82,1.59),
-        Vertex(-5.58,-1.99),
-        Vertex(-1.62,-0.65),
-        Vertex(-3.26,0.45),
-        Vertex(-0.1,3.31)
-    ]
-
-    polygon = Polygon(contour)
-    # polygon.display()
-
-    search_tree = seidel(polygon, debug)
-    
-    if check_trapezoidation(search_tree):
-        print("Trapezoidation: Correct")
-    else:
-        print("Error in Trapezoidation")
-
-    plt.axis('equal')
-    plt.xlim(X_MIN, X_MAX)
-    plt.ylim(Y_MIN, Y_MAX)
-    plt.show()
-
-
-if __name__ == "__main__":
-    main()
-    
