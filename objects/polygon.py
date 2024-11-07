@@ -7,14 +7,14 @@ class Polygon:
     vertices:list[Vertex]
 
 
-    def __init__(self, vertices:list[Vertex]) -> None:
-        self.vertices = vertices
+    def __init__(self, contours:list[list[Vertex]]) -> None:
+        self.contours = contours
 
 
     def get_edges(self) -> list[Edge]:
         return [
-            Edge(self.vertices[i], self.vertices[(i+1)%len(self.vertices)]) 
-            for i in range(len(self.vertices))
+            Edge(contour[i], contour[(i+1)%len(contour)]) 
+            for contour in self.contours for i in range(len(contour)) 
         ]
     
 
