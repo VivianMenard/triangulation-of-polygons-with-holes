@@ -253,6 +253,7 @@ class Node:
                     additional_bottom_left_trap.trapezoids_above = [top_left_trap]
 
             else:
+                assert(len(top_right_trap.trapezoids_below) == 1)
                 if len(bottom_right_trap.trapezoids_above) == 2: # upward branch
                     assert(len(top_right_trap.trapezoids_below) == 1)
 
@@ -271,7 +272,7 @@ class Node:
                         top_left_trap.trapezoids_below = [bottom_left_trap]
                         additional_top_left_trap.trapezoids_below = [bottom_left_trap]
 
-                else: # no branch -> after merge addition it's not supposed to happened
+                else:
                     assert(len(top_right_trap.trapezoids_below) == 1)
                     assert(len(bottom_right_trap.trapezoids_above) == 1)
 
