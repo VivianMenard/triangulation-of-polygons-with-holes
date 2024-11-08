@@ -6,7 +6,7 @@ from objects.node import Node
 
 
 
-def trapezoidation(polygon:Polygon, debug:bool=False) -> Node:
+def trapezoidation(polygon:Polygon, display:bool, debug:bool=False) -> Node:
     edges:list[Edge] = polygon.get_edges()
     shuffle(edges)
 
@@ -34,18 +34,7 @@ def trapezoidation(polygon:Polygon, debug:bool=False) -> Node:
             bottom_should_be_inserted
         )
 
-    search_tree.display(debug)
+    if display:
+        search_tree.display(debug)
 
     return search_tree
-
-
-
-def check_trapezoidation(search_tree:Node) -> bool:
-    all_traps:list[Trapezoid] = []
-    search_tree.get_all_traps(all_traps)
-
-    for trap in all_traps:
-        if not trap.check_neighbors():
-            return False
-
-    return True

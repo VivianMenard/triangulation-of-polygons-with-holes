@@ -2,15 +2,14 @@ import matplotlib.pyplot as plt
 
 from objects.vertex import Vertex
 from objects.polygon import Polygon
-from algorithms import trapezoidation, check_trapezoidation
+from algorithms import trapezoidation
+from tests_functions import check_trapezoidation
 
 from constants import X_MIN, X_MAX, Y_MIN, Y_MAX
 
 
 
 def main():
-    debug = True
-
     contours = [
         [
             Vertex(-5.14,4.73),
@@ -30,15 +29,15 @@ def main():
     ]
 
     polygon = Polygon(contours)
-    # polygon.display()
 
-    search_tree = trapezoidation(polygon, debug)
+    search_tree = trapezoidation(
+        polygon=polygon, 
+        display=True, 
+        debug=True
+    )
     
-    if check_trapezoidation(search_tree):
-        print("Trapezoidation: Correct")
-    else:
-        print("Error in Trapezoidation")
-
+    check_trapezoidation(search_tree, print_result=True)
+    
     plt.axis('equal')
     plt.xlim(X_MIN, X_MAX)
     plt.ylim(Y_MIN, Y_MAX)
