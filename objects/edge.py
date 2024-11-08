@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from objects.vertex import Vertex
+from objects import Vertex
 
 
 

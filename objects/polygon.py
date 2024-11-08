@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
-from objects.edge import Edge
-from objects.vertex import Vertex
+from objects import Edge
+from objects import Vertex
 
 
 

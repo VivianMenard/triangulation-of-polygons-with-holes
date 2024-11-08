@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from objects.vertex import Vertex
-from objects.edge import Edge
-from objects.trapezoid import Trapezoid
+from objects import Vertex
+from objects import Edge
+from objects import Trapezoid
 
 from utils import replace
 from constants import NodeType

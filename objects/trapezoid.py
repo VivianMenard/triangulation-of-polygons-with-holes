@@ -3,8 +3,8 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 from typing import ClassVar
 
-from objects.edge import Edge
-from objects.vertex import Vertex
+from objects import Edge
+from objects import Vertex
 
 from utils import replace
 from constants import X_MIN, X_MAX, Y_MIN, Y_MAX

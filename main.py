@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 
-from objects.vertex import Vertex
-from objects.polygon import Polygon
+from objects import Vertex
+from objects import Polygon
+
 from algorithms import trapezoidation
 from tests_functions import check_trapezoidation
 
