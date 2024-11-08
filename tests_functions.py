@@ -23,9 +23,19 @@ def check_trapezoidation(search_tree:Node, print_result:bool=False) -> bool:
     return True
 
 
+def check_tree_consistency(search_tree:Node, print_result:bool=False) -> bool:
+    is_consistent = search_tree.check_consistency()
+
+    if print_result:
+        print(f"Tree consistency: {"Correct" if is_consistent else "Incorrect"}")
+
+    return is_consistent
+
+
 def test_trapezoidation_a_lot_of_times(polygon:Polygon, nb_iterations:int) -> None:
     nb_errors = 0
-    nb_incorrect_trapezoidation = 0
+    nb_incorrect_trapezoidations = 0
+    nb_incorrect_trees = 0
 
     for _ in range(nb_iterations):
         try:
@@ -35,10 +45,14 @@ def test_trapezoidation_a_lot_of_times(polygon:Polygon, nb_iterations:int) -> No
             )
 
             if not check_trapezoidation(search_tree):
-                nb_incorrect_trapezoidation += 1
+                nb_incorrect_trapezoidations += 1
+
+            if not check_tree_consistency(search_tree):
+                nb_incorrect_trees += 1
 
         except:
             nb_errors += 1
 
     print(f"Nb errors: {nb_errors}")
-    print(f"Nb incorrect trapezoidations: {nb_incorrect_trapezoidation}")
+    print(f"Nb incorrect trapezoidations: {nb_incorrect_trapezoidations}")
+    print(f"Nb incorrect trees: {nb_incorrect_trees}")

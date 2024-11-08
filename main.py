@@ -4,7 +4,7 @@ from objects import Vertex
 from objects import Polygon
 
 from algorithms import trapezoidation
-from tests_functions import check_trapezoidation
+from tests_functions import check_trapezoidation, check_tree_consistency
 
 from constants import X_MIN, X_MAX, Y_MIN, Y_MAX
 
@@ -38,6 +38,7 @@ def main():
     )
     
     check_trapezoidation(search_tree, print_result=True)
+    check_tree_consistency(search_tree, print_result=True)
     
     plt.axis('equal')
     plt.xlim(X_MIN, X_MAX)
