@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 
-from objects import Vertex
-from objects import Polygon
+from objects import Vertex, Polygon
 
 from algorithms import trapezoidation
 from tests_functions import check_trapezoidation, check_tree_consistency

@@ -1,8 +1,6 @@
 from random import shuffle
 
-from objects import Polygon
-from objects import Trapezoid
-from objects import Node
+from objects import Polygon, Trapezoid, Node
 
 
 

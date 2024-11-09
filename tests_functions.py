@@ -1,6 +1,4 @@
-from objects import Trapezoid
-from objects import Node
-from objects import Polygon
+from objects import Trapezoid, Node, Polygon
 
 from algorithms import trapezoidation
 
