@@ -12,7 +12,7 @@ class Node:
     associated_obj:Trapezoid|Edge|Vertex
     left_child:"Node"|None
     right_child:"Node"|None
-    parent:"Node"|None
+    parents:list["Node"]
 
 
     def __init__(
@@ -26,17 +26,28 @@ class Node:
         trapezoid.associated_node = self
         self.left_child = None
         self.right_child = None
-        self.parent = parent
+        self.parents = []
+
+        # at the time of its creation a Node can't have more thant one parent
+        if parent:
+            self.parents.append(parent)
 
 
     def replace_by_another_node_in_tree(self, new_node:"Node") -> None:
         assert(self.node_type == NodeType.TRAPEZOID)
+        assert(new_node.node_type == NodeType.TRAPEZOID)
 
-        if self.parent.left_child == self:
-            self.parent.left_child = new_node
-        else: # I think that a same node can't be left and right child of a same parent but not sure for the moment...
-            assert(self.parent.right_child == self)
-            self.parent.right_child = new_node
+        if new_node == self:
+            return
+
+        for parent in self.parents:
+            if parent.left_child == self:
+                parent.left_child = new_node
+
+            elif parent.right_child == self:
+                parent.right_child = new_node
+
+        new_node.parents.extend(self.parents)
 
 
     def split_by_vertex(self, vertex:Vertex) -> None:
@@ -317,7 +328,7 @@ class Node:
         left_consistency = (
             not self.left_child or
             (
-                self.left_child.parent == self and
+                self in self.left_child.parents and
                 self.left_child.check_consistency()
             )
         ) 
@@ -325,7 +336,7 @@ class Node:
         right_consistency = (
             not self.right_child or
             (
-                self.right_child.parent == self and
+                self in self.right_child.parents and
                 self.right_child.check_consistency()
             )
         ) 
