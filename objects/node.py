@@ -110,15 +110,6 @@ class Node:
 
         return relevant_child.search_area_containing_vertex(vertex)
 
-
-    def display(self, debug:bool=False) -> None:
-        if self.node_type == NodeType.TRAPEZOID:
-            self.associated_obj.display(debug=debug)
-            return
-
-        self.left_child.display(debug)
-        self.right_child.display(debug)
-
     
     def insert_edge(self, edge:Edge, top_vertex_just_inserted:bool, bottom_vertex_just_inserted:bool) -> None:
         assert(self.node_type == NodeType.TRAPEZOID)
@@ -312,16 +303,18 @@ class Node:
                     distance_to_top_neighbor = 1        
 
 
-    def get_all_traps(self, trapezoids_acc:list[Trapezoid]|None = None)->None:
+    def get_all_traps(self, trapezoids_acc:list[Trapezoid]|None = None) -> list[Trapezoid]:
         if trapezoids_acc is None:
             trapezoids_acc = []
 
         if self.node_type == NodeType.TRAPEZOID:
             trapezoids_acc.append(self.associated_obj)
-            return
 
-        self.left_child.get_all_traps(trapezoids_acc)
-        self.right_child.get_all_traps(trapezoids_acc)
+        else:
+            self.left_child.get_all_traps(trapezoids_acc)
+            self.right_child.get_all_traps(trapezoids_acc)
+
+        return trapezoids_acc
 
     
     def check_consistency(self) -> bool:

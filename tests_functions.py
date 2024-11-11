@@ -5,8 +5,7 @@ from algorithms import trapezoidation
 
 
 def check_trapezoidation(search_tree:Node, print_result:bool=False) -> bool:
-    all_traps:list[Trapezoid] = []
-    search_tree.get_all_traps(all_traps)
+    all_traps = search_tree.get_all_traps()
 
     for trap in all_traps:
         if not trap.check_neighbors():

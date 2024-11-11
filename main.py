@@ -30,12 +30,11 @@ def main():
 
     polygon = Polygon(contours)
 
-    search_tree = trapezoidation(
-        polygon=polygon, 
-        display=True, 
-        debug=True
-    )
-    
+    search_tree = trapezoidation(polygon)
+
+    for trap in search_tree.get_all_traps():
+        trap.display(debug=True)
+
     check_trapezoidation(search_tree, print_result=True)
     check_tree_consistency(search_tree, print_result=True)
     

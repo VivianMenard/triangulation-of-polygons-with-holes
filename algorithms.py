@@ -4,7 +4,7 @@ from objects import Polygon, Trapezoid, Node
 
 
 
-def trapezoidation(polygon:Polygon, display:bool, debug:bool=False) -> Node:
+def trapezoidation(polygon:Polygon) -> Node:
     edges:list[Edge] = polygon.get_edges()
     shuffle(edges)
 
@@ -31,8 +31,5 @@ def trapezoidation(polygon:Polygon, display:bool, debug:bool=False) -> Node:
             top_should_be_inserted,
             bottom_should_be_inserted
         )
-
-    if display:
-        search_tree.display(debug)
 
     return search_tree
