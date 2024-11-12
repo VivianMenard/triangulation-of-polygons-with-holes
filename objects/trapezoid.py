@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
-from typing import ClassVar
+from typing import ClassVar, DefaultDict
+from collections import defaultdict
 
 from objects import Vertex, Edge
 
@@ -12,13 +13,14 @@ from constants import X_MIN, X_MAX, Y_MIN, Y_MAX
 
 class Trapezoid:
     next_id:ClassVar[int] = 0
+    traps_by_right_edge:ClassVar[DefaultDict[Edge,set[Trapezoid]]] = defaultdict(set)
 
     top_vertex:Vertex|None
     bottom_vertex:Vertex|None
     trapezoids_above:list["Trapezoid"] # up to 2 trap above, if 2 the first is the one at the left
     trapezoids_below:list["Trapezoid"] # up to 2 trap below, if 2 the first is the one at the left
     left_edge:Edge|None
-    right_edge:Edge|None
+    _right_edge:Edge|None
     associated_node:"Node"|None
     inside:bool
      
@@ -40,6 +42,7 @@ class Trapezoid:
         self.trapezoids_above = [] if trapezoids_above is None else trapezoids_above
         self.trapezoids_below = [] if trapezoids_below is None else trapezoids_below
         self.left_edge = left_edge
+        self._right_edge = None
         self.right_edge = right_edge
         self.associated_node = None
         self.inside = False
@@ -61,6 +64,31 @@ class Trapezoid:
             replace(trap.trapezoids_above, bottom_trap, top_trap)
 
         bottom_trap.associated_node.replace_by_another_node_in_tree(top_trap.associated_node)
+        bottom_trap.remove_from_edge_registry()
+
+
+    @property
+    def right_edge(self) -> Edge|None:
+        return self._right_edge
+
+
+    @right_edge.setter
+    def right_edge(self, new_right_edge:Edge) -> None:
+        self.remove_from_edge_registry()
+
+        self._right_edge = new_right_edge
+
+        self.register_in_edge_registry()
+
+
+    def remove_from_edge_registry(self) -> None:
+        if self._right_edge is not None:
+            Trapezoid.traps_by_right_edge[self._right_edge].remove(self)
+
+
+    def register_in_edge_registry(self) -> None:
+        if self._right_edge is not None:
+            Trapezoid.traps_by_right_edge[self._right_edge].add(self)
 
     
     def duplicate(self) -> "Trapezoid":
