@@ -3,6 +3,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 from typing import ClassVar, DefaultDict
 from collections import defaultdict
+from functools import cached_property
 
 from objects import Vertex, Edge
 
@@ -89,6 +90,17 @@ class Trapezoid:
     def register_in_edge_registry(self) -> None:
         if self._right_edge is not None:
             Trapezoid.traps_by_right_edge[self._right_edge].add(self)
+
+
+    @cached_property
+    def is_inside(self) -> bool:
+        if self.right_edge is None or self.left_edge is None:
+            return False
+
+        left_traps = Trapezoid.traps_by_right_edge[self.left_edge]
+        left_trap = next(iter(left_traps))
+
+        return not left_trap.is_inside
 
     
     def duplicate(self) -> "Trapezoid":
