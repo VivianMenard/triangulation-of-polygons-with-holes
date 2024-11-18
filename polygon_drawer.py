@@ -4,6 +4,19 @@ from tkinter import Canvas
 from objects import Vertex
 
 
+
+def counter_clockwise(ptA:Vertex, ptB:Vertex, ptC:Vertex) -> bool:
+    return (ptC.y - ptA.y) * (ptB.x - ptA.x) > (ptB.y-ptA.y) * (ptC.x - ptA.x)
+
+
+def segment_intersect(ptA:Vertex, ptB:Vertex, ptC:Vertex, ptD:Vertex) -> bool:
+    return (
+        counter_clockwise(ptA, ptB, ptC) != counter_clockwise(ptA, ptB, ptD) and
+        counter_clockwise(ptC, ptD, ptA) != counter_clockwise(ptC, ptD, ptB)
+    )
+
+
+
 class PolygonDrawer:
     def __init__(self, root:tk.Tk) -> None:
         self.canvas = Canvas(
@@ -14,7 +27,7 @@ class PolygonDrawer:
         )
         self.canvas.pack(fill=tk.BOTH, expand=True)
         
-        self.canvas.bind("<Button-1>", self.add_vertex)
+        self.canvas.bind("<Button-1>", self.add_point)
         self.canvas.bind("<Button-3>", self.close_polygon)
 
         self.clear_button = tk.Button(
@@ -41,16 +54,21 @@ class PolygonDrawer:
             pady=10
         )
 
-        self.vertex_color = "red"
+        self.point_color = "red"
         self.line_color = "black"
-        self.vertex_radius = 2
+        self.point_radius = 2
 
         self.contours:list[list[Vertex]] = []
         self.objects_ids_by_contours:list[list[int]] = []
         self.in_progress:bool = False
         
 
-    def add_vertex(self, event:tk.Event) -> None:
+    def add_point(self, event:tk.Event) -> None:
+        new_point = Vertex(event.x, event.y)
+
+        if self.in_progress and self.intersect_already_drawn_lines(new_point):
+            return
+
         if not self.in_progress:
             self.contours.append([])
             self.objects_ids_by_contours.append([])
@@ -58,11 +76,9 @@ class PolygonDrawer:
 
             self.update_buttons()
 
-        vertex = Vertex(event.x, event.y)
-
         contour = self.contours[-1]
-        contour.append(vertex)
-        self.draw_vertex(vertex)
+        contour.append(new_point)
+        self.draw_point(new_point)
 
         if len(contour) > 1:
             self.draw_line(contour[-2], contour[-1])
@@ -71,7 +87,7 @@ class PolygonDrawer:
     def close_polygon(self, event:tk.Event) -> None:
         contour = self.contours[-1]
 
-        if len(contour) > 2:
+        if len(contour) > 2 and not self.intersect_already_drawn_lines():
             self.draw_line(contour[-1], contour[0])
             self.in_progress = False
     
@@ -117,23 +133,51 @@ class PolygonDrawer:
         button.config(state=state)
 
 
-    def draw_vertex(self, vertex:Vertex) -> None:
-        vertex_id = self.canvas.create_oval(
-            vertex.x - self.vertex_radius, 
-            vertex.y - self.vertex_radius, 
-            vertex.x + self.vertex_radius, 
-            vertex.y + self.vertex_radius, 
-            fill=self.vertex_color
+    def draw_point(self, point:Vertex) -> None:
+        pt_id = self.canvas.create_oval(
+            point.x - self.point_radius, 
+            point.y - self.point_radius, 
+            point.x + self.point_radius, 
+            point.y + self.point_radius, 
+            fill=self.point_color
         )
-        self.objects_ids_by_contours[-1].append(vertex_id)
+        self.objects_ids_by_contours[-1].append(pt_id)
 
-    def draw_line(self, vertex_1:Vertex, vertex_2:Vertex) -> None:
+
+    def draw_line(self, ptA:Vertex, ptB:Vertex) -> None:
         line_id = self.canvas.create_line(
-            (vertex_1.x, vertex_1.y), 
-            (vertex_2.x, vertex_2.y), 
+            (ptA.x, ptA.y), 
+            (ptB.x, ptB.y), 
             fill=self.line_color
         )
         self.objects_ids_by_contours[-1].append(line_id)
+
+
+    def intersect_already_drawn_lines(self, new_pt:Vertex|None=None) -> bool:
+        """
+        If you specify a new_pt it tests if adding the new pt to the polygon will make intersecting edges,
+        otherwise it tests if closing the polygon will do so.
+        """
+        closing = new_pt is None
+        beg_new_line = self.contours[-1][-1]
+
+        if closing:
+            new_pt = self.contours[-1][0]
+
+        for contour_index, contour in enumerate(self.contours):
+            is_last_contour = contour_index == len(self.contours) - 1
+            beg = 1 if is_last_contour and closing else 0
+            end_offset = 2 if is_last_contour else 0
+
+            for pt_index in range(beg, len(contour) - end_offset):
+                ptA = contour[pt_index]
+                ptB = contour[(pt_index + 1) % len(contour)]
+
+                if segment_intersect(ptA, ptB, beg_new_line, new_pt):
+                    return True
+
+        return False
+
 
 
 root = tk.Tk()
