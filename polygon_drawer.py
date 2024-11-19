@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import Canvas
 
-from objects import Vertex
+from objects import Vertex, Polygon
+from algorithms import trapezoidation
 
 
 
@@ -54,6 +55,18 @@ class PolygonDrawer:
             pady=10
         )
 
+        self.make_monotone_polygons = tk.Button(
+            root, 
+            text="Transform into monotone polygons", 
+            command=self.make_monotone_polygons,
+            state="disabled"
+        )
+        self.make_monotone_polygons.pack(
+            side=tk.LEFT, 
+            padx=(5,5), 
+            pady=10
+        )
+
         self.point_color = "red"
         self.line_color = "black"
         self.point_radius = 2
@@ -90,6 +103,7 @@ class PolygonDrawer:
         if len(contour) > 2 and not self.intersect_already_drawn_lines():
             self.draw_line(contour[-1], contour[0])
             self.in_progress = False
+            self.update_buttons()
     
 
     def clear(self) -> None:
@@ -117,6 +131,7 @@ class PolygonDrawer:
     
     def update_buttons(self) -> None:
         clear_buttons_enabled = bool(self.contours)
+        make_monotone_polygons_button_enabled = bool(self.contours) and not self.in_progress
 
         self.update_button_state(
             self.clear_button, 
@@ -125,6 +140,10 @@ class PolygonDrawer:
         self.update_button_state(
             self.clear_last_button, 
             clear_buttons_enabled
+        )
+        self.update_button_state(
+            self.make_monotone_polygons,
+            make_monotone_polygons_button_enabled
         )
 
 
@@ -177,6 +196,22 @@ class PolygonDrawer:
                     return True
 
         return False
+
+
+    def make_monotone_polygons(self) -> None:
+        polygon = Polygon(self.contours)
+
+        search_tree = trapezoidation(polygon)
+
+        for trap in search_tree.get_all_traps():
+            if trap.is_inside:
+                if (
+                    (trap.bottom_vertex == trap.left_edge.bottom_vertex and trap.top_vertex == trap.left_edge.top_vertex) or 
+                    (trap.bottom_vertex == trap.right_edge.bottom_vertex and trap.top_vertex == trap.right_edge.top_vertex)
+                ): # the edge between bottom vertex and top vertex of a trap is its left/right edge -> already drawn
+                    continue
+
+                self.draw_line(trap.bottom_vertex, trap.top_vertex)
 
 
 
