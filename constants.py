@@ -1,7 +1,5 @@
 from enum import Enum
 
-
-
 X_MIN = -10
 X_MAX = 10
 Y_MIN = -10
