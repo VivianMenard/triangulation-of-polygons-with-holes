@@ -55,13 +55,13 @@ class PolygonDrawer:
             pady=10
         )
 
-        self.make_monotone_polygons = tk.Button(
+        self.make_monotone_mountains_button= tk.Button(
             root, 
-            text="Transform into monotone polygons", 
-            command=self.make_monotone_polygons,
+            text="Transform into monotone mountains", 
+            command=self.make_monotone_mountains,
             state="disabled"
         )
-        self.make_monotone_polygons.pack(
+        self.make_monotone_mountains_button.pack(
             side=tk.LEFT, 
             padx=(5,5), 
             pady=10
@@ -131,7 +131,7 @@ class PolygonDrawer:
     
     def update_buttons(self) -> None:
         clear_buttons_enabled = bool(self.contours)
-        make_monotone_polygons_button_enabled = bool(self.contours) and not self.in_progress
+        make_monotone_mountains_button_enabled = bool(self.contours) and not self.in_progress
 
         self.update_button_state(
             self.clear_button, 
@@ -142,8 +142,8 @@ class PolygonDrawer:
             clear_buttons_enabled
         )
         self.update_button_state(
-            self.make_monotone_polygons,
-            make_monotone_polygons_button_enabled
+            self.make_monotone_mountains_button,
+         make_monotone_mountains_button_enabled
         )
 
 
@@ -198,7 +198,7 @@ class PolygonDrawer:
         return False
 
 
-    def make_monotone_polygons(self) -> None:
+    def make_monotone_mountains(self) -> None:
         polygon = Polygon(self.contours)
 
         search_tree = trapezoidation(polygon)
