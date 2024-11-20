@@ -1,5 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from algorithms import trapezoidation
-from objects import Node, Polygon
+
+if TYPE_CHECKING:
+    from objects import Node, Polygon
 
 
 def check_trapezoidation(search_tree: Node, print_result: bool = False) -> bool:

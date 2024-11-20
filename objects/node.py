@@ -1,21 +1,24 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from constants import NodeType
 from utils import replace
 
-from .edge import Edge
 from .trapezoid import Trapezoid
-from .vertex import Vertex
+
+if TYPE_CHECKING:
+    from objects import Edge, Vertex
 
 
 class Node:
     node_type: NodeType
     associated_obj: Trapezoid | Edge | Vertex
-    left_child: "Node" | None
-    right_child: "Node" | None
-    parents: list["Node"]
+    left_child: Node | None
+    right_child: Node | None
+    parents: list[Node]
 
-    def __init__(self, trapezoid: Trapezoid, parent: "Node" | None = None) -> None:
+    def __init__(self, trapezoid: Trapezoid, parent: Node | None = None) -> None:
         # At the time of its creation a Node is always a leaf, ie a Trapezoid node
         self.node_type = NodeType.TRAPEZOID
         self.associated_obj = trapezoid
@@ -94,7 +97,7 @@ class Node:
     ) -> None:
         assert self.node_type == NodeType.TRAPEZOID
 
-        nodes_to_split_down_direction: list["Node"] = []
+        nodes_to_split_down_direction: list[Node] = []
         current_trap: Trapezoid = self.associated_obj
 
         while current_trap.bottom_vertex != edge.bottom_vertex:
@@ -120,7 +123,7 @@ class Node:
 
             nodes_to_split_down_direction.append(current_trap.associated_node)
 
-        nodes_to_split_up_direction: list["Node"] = []
+        nodes_to_split_up_direction: list[Node] = []
         current_trap: Trapezoid = self.associated_obj
 
         while current_trap.top_vertex != edge.top_vertex:

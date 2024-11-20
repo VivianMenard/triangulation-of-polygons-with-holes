@@ -1,6 +1,12 @@
-from random import shuffle
+from __future__ import annotations
 
-from objects import Edge, Node, Polygon, Trapezoid, Vertex
+from random import shuffle
+from typing import TYPE_CHECKING
+
+from objects import Node, Trapezoid
+
+if TYPE_CHECKING:
+    from objects import Edge, Polygon, Vertex
 
 
 def trapezoidation(polygon: Polygon) -> Node:

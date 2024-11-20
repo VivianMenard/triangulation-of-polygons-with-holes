@@ -1,5 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from .edge import Edge
-from .vertex import Vertex
+
+if TYPE_CHECKING:
+    from .vertex import Vertex
 
 
 class Polygon:

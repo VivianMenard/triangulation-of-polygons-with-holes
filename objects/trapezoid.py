@@ -2,15 +2,18 @@ from __future__ import annotations
 
 from collections import defaultdict
 from functools import cached_property
-from typing import ClassVar, DefaultDict
+from typing import TYPE_CHECKING, ClassVar, DefaultDict
 
 import matplotlib.pyplot as plt
 
 from constants import X_MAX, X_MIN, Y_MAX, Y_MIN
 from utils import replace
 
-from .edge import Edge
 from .vertex import Vertex
+
+if TYPE_CHECKING:
+    from .edge import Edge
+    from .node import Node
 
 
 class Trapezoid:
@@ -27,7 +30,7 @@ class Trapezoid:
     ]  # up to 2 trap below, if 2 the first is the one at the left
     left_edge: Edge | None
     _right_edge: Edge | None
-    associated_node: "Node" | None
+    associated_node: Node | None
     inside: bool
 
     def __init__(
