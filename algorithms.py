@@ -10,8 +10,10 @@ from objects import (
     MonotoneVertex,
     Node,
     Trapezoid,
+    Triangle,
     Vertex,
 )
+from utils import counter_clockwise
 
 if TYPE_CHECKING:
     from objects import Polygon
@@ -94,3 +96,50 @@ def make_monotone_mountains(
                 monotone_mountain_created = True
 
     return monotone_mountains
+
+
+def triangulate_monotone_mountain(
+    mountain: MonotoneMountain, triangles: list[Triangle]
+) -> None:
+    if mountain.is_degenerated:
+        return
+
+    first_non_base_vertex: MonotoneVertex = cast(
+        MonotoneVertex, mountain.bottom_vertex.above
+    )
+
+    convex_order: bool = counter_clockwise(
+        mountain.base.top_vertex,
+        mountain.base.bottom_vertex,
+        first_non_base_vertex.vertex,
+    )
+
+    current_vertex: MonotoneVertex = first_non_base_vertex
+
+    while not current_vertex.is_base_vertex:
+        below = cast(MonotoneVertex, current_vertex.below)
+        above = cast(MonotoneVertex, current_vertex.above)
+        is_current_vertex_convex = (
+            counter_clockwise(below.vertex, current_vertex.vertex, above.vertex)
+            == convex_order
+        )
+
+        if is_current_vertex_convex:
+            triangles.append(
+                Triangle([below.vertex, current_vertex.vertex, above.vertex])
+            )
+            below.above = above
+            above.below = below
+            current_vertex = above if below.is_base_vertex else below
+
+        else:
+            current_vertex = above
+
+
+def make_triangles(monotone_mountains: list[MonotoneMountain]) -> list[Triangle]:
+    triangles: list[Triangle] = []
+
+    for monotone_mountain in monotone_mountains:
+        triangulate_monotone_mountain(monotone_mountain, triangles)
+
+    return triangles
