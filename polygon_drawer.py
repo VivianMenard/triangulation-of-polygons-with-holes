@@ -3,10 +3,7 @@ from tkinter import Canvas
 
 from algorithms import trapezoidation
 from objects import Polygon, Vertex
-
-
-def counter_clockwise(ptA: Vertex, ptB: Vertex, ptC: Vertex) -> bool:
-    return (ptC.y - ptA.y) * (ptB.x - ptA.x) > (ptB.y - ptA.y) * (ptC.x - ptA.x)
+from utils import counter_clockwise
 
 
 def segment_intersect(ptA: Vertex, ptB: Vertex, ptC: Vertex, ptD: Vertex) -> bool:
