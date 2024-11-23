@@ -4,6 +4,7 @@ from .monotone_vertex import MonotoneVertex
 from .node import Node
 from .polygon import Polygon
 from .trapezoid import Trapezoid
+from .triangle import Triangle
 from .vertex import Vertex
 
 __all__ = [
@@ -13,5 +14,6 @@ __all__ = [
     "Trapezoid",
     "Vertex",
     "MonotoneVertex",
+    "Triangle",
     "MonotoneMountain",
 ]
