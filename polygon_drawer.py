@@ -52,6 +52,7 @@ class PolygonDrawer:
 
         self.contours: list[list[Vertex]] = []
         self.objects_ids_by_contours: list[list[int]] = []
+        self.triangles_ids: list[int] = []
         self.in_progress: bool = False
 
     def add_point(self, event: tk.Event) -> None:
@@ -161,11 +162,18 @@ class PolygonDrawer:
 
         color = get_random_pastel_color()
 
-        self.canvas.create_polygon(
+        triangle_id = self.canvas.create_polygon(
             pt1.x, pt1.y, pt2.x, pt2.y, pt3.x, pt3.y, fill=color, outline=color, width=1
         )
+        self.triangles_ids.append(triangle_id)
+
+    def clear_triangulation(self) -> None:
+        for triangle_id in self.triangles_ids:
+            self.canvas.delete(triangle_id)
 
     def triangulate(self) -> None:
+        self.clear_triangulation()
+
         polygon = Polygon(self.contours)
 
         search_tree = trapezoidation(polygon)
