@@ -115,7 +115,7 @@ class Trapezoid:
             right_edge=self.right_edge,
         )
 
-    def display(self, color: str = "green", debug: bool = False) -> None:
+    def matplotlib_display(self, color: str = "green", debug: bool = False) -> None:
         y_max = Y_MAX if self.top_vertex is None else self.top_vertex.y
         y_min = Y_MIN if self.bottom_vertex is None else self.bottom_vertex.y
         x_min_top, x_min_bottom = X_MIN, X_MIN

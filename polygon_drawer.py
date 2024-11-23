@@ -188,8 +188,3 @@ class PolygonDrawer:
 
         for triangle in triangles:
             self.draw_triangle(triangle)
-
-
-root = tk.Tk()
-app = PolygonDrawer(root)
-root.mainloop()

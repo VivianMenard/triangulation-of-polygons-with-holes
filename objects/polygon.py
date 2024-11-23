@@ -21,6 +21,6 @@ class Polygon:
             for i in range(len(contour))
         ]
 
-    def display(self) -> None:
+    def matplotlib_display(self) -> None:
         for edge in self.get_edges():
-            edge.display()
+            edge.matplotlib_display()

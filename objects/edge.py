@@ -14,7 +14,7 @@ class Edge:
         self.end = end
         self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
 
-    def display(self, color: str = "blue") -> None:
+    def matplotlib_display(self, color: str = "blue") -> None:
         x = [self.start.x, self.end.x]
         y = [self.start.y, self.end.y]
 
