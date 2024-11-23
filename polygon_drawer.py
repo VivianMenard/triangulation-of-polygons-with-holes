@@ -1,9 +1,14 @@
 import tkinter as tk
 from tkinter import Canvas
 
-from algorithms import trapezoidation
-from objects import Polygon, Vertex
-from utils import counter_clockwise
+from algorithms import (
+    make_monotone_mountains,
+    make_triangles,
+    select_inside_trapezoids,
+    trapezoidation,
+)
+from objects import Polygon, Triangle, Vertex
+from utils import counter_clockwise, get_random_pastel_color
 
 
 def segment_intersect(ptA: Vertex, ptB: Vertex, ptC: Vertex, ptD: Vertex) -> bool:
@@ -33,13 +38,13 @@ class PolygonDrawer:
         )
         self.clear_last_button.pack(side=tk.LEFT, padx=(5, 5), pady=10)
 
-        self.make_monotone_mountains_button = tk.Button(
+        self.triangulate_button = tk.Button(
             root,
-            text="Transform into monotone mountains",
-            command=self.make_monotone_mountains,
+            text="Triangulate",
+            command=self.triangulate,
             state="disabled",
         )
-        self.make_monotone_mountains_button.pack(side=tk.LEFT, padx=(5, 5), pady=10)
+        self.triangulate_button.pack(side=tk.LEFT, padx=(5, 5), pady=10)
 
         self.point_color = "red"
         self.line_color = "black"
@@ -100,15 +105,11 @@ class PolygonDrawer:
 
     def update_buttons(self) -> None:
         clear_buttons_enabled = bool(self.contours)
-        make_monotone_mountains_button_enabled = (
-            bool(self.contours) and not self.in_progress
-        )
+        triangulate_button_enabled = bool(self.contours) and not self.in_progress
 
         self.update_button_state(self.clear_button, clear_buttons_enabled)
         self.update_button_state(self.clear_last_button, clear_buttons_enabled)
-        self.update_button_state(
-            self.make_monotone_mountains_button, make_monotone_mountains_button_enabled
-        )
+        self.update_button_state(self.triangulate_button, triangulate_button_enabled)
 
     def update_button_state(self, button: tk.Button, enabled: bool) -> None:
         state = "normal" if enabled else "disabled"
@@ -155,26 +156,30 @@ class PolygonDrawer:
 
         return False
 
-    def make_monotone_mountains(self) -> None:
+    def draw_triangle(self, triangle: Triangle) -> None:
+        pt1, pt2, pt3 = triangle.vertices
+
+        color = get_random_pastel_color()
+
+        self.canvas.create_polygon(
+            pt1.x, pt1.y, pt2.x, pt2.y, pt3.x, pt3.y, fill=color, outline=color, width=1
+        )
+
+    def triangulate(self) -> None:
         polygon = Polygon(self.contours)
 
         search_tree = trapezoidation(polygon)
 
-        for trap in search_tree.get_all_traps():
-            if trap.is_inside:
-                if (
-                    (
-                        trap.bottom_vertex == trap.left_edge.bottom_vertex
-                        and trap.top_vertex == trap.left_edge.top_vertex
-                    )
-                    or (
-                        trap.bottom_vertex == trap.right_edge.bottom_vertex
-                        and trap.top_vertex == trap.right_edge.top_vertex
-                    )
-                ):  # the edge between bottom vertex and top vertex of a trap is its left/right edge -> already drawn
-                    continue
+        all_trapezoids = search_tree.get_all_traps()
 
-                self.draw_line(trap.bottom_vertex, trap.top_vertex)
+        inside_trapezoids = select_inside_trapezoids(all_trapezoids)
+
+        monotone_mountains = make_monotone_mountains(inside_trapezoids)
+
+        triangles = make_triangles(monotone_mountains)
+
+        for triangle in triangles:
+            self.draw_triangle(triangle)
 
 
 root = tk.Tk()

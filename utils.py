@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -14,3 +15,7 @@ def replace(l: list, to_replace, replace_by) -> None:
 
 def counter_clockwise(ptA: Vertex, ptB: Vertex, ptC: Vertex) -> bool:
     return (ptC.y - ptA.y) * (ptB.x - ptA.x) > (ptB.y - ptA.y) * (ptC.x - ptA.x)
+
+
+def get_random_pastel_color() -> str:
+    return f"#{random.randint(100, 255):02x}{random.randint(100, 255):02x}{random.randint(100, 255):02x}"
