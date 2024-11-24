@@ -1,5 +1,4 @@
-import tkinter as tk
-from tkinter import Canvas
+from tkinter import BOTH, LEFT, Button, Canvas, Event, Tk
 
 from algorithms import (
     make_monotone_mountains,
@@ -12,36 +11,47 @@ from utils import get_random_pastel_color, segment_intersect
 
 
 class PolygonDrawer:
-    def __init__(self, root: tk.Tk) -> None:
+    canvas: Canvas
+    clear_button: Button
+    clear_last_button: Button
+    point_color: str
+    line_color: str
+    point_radius: int
+    contours: list[list[Vertex]]
+    objects_ids_by_contours: list[list[int]]
+    triangles_ids: list[int]
+    in_progress: bool
+
+    def __init__(self, root: Tk) -> None:
         self.canvas = Canvas(root, width=1000, height=600, bg="white")
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.canvas.pack(fill=BOTH, expand=True)
 
         self.canvas.bind("<Button-1>", self.add_point)
         self.canvas.bind("<Button-3>", self.close_polygon)
 
-        self.clear_button = tk.Button(
+        self.clear_button = Button(
             root, text="Clear", command=self.clear, state="disabled"
         )
-        self.clear_button.pack(side=tk.LEFT, padx=(20, 5), pady=10)
+        self.clear_button.pack(side=LEFT, padx=(20, 5), pady=10)
 
-        self.clear_last_button = tk.Button(
+        self.clear_last_button = Button(
             root,
             text="Clear last contour",
             command=self.clear_last_contour,
             state="disabled",
         )
-        self.clear_last_button.pack(side=tk.LEFT, padx=(5, 5), pady=10)
+        self.clear_last_button.pack(side=LEFT, padx=(5, 5), pady=10)
 
         self.point_color = "red"
         self.line_color = "black"
         self.point_radius = 2
 
-        self.contours: list[list[Vertex]] = []
-        self.objects_ids_by_contours: list[list[int]] = []
-        self.triangles_ids: list[int] = []
-        self.in_progress: bool = False
+        self.contours = []
+        self.objects_ids_by_contours = []
+        self.triangles_ids = []
+        self.in_progress = False
 
-    def add_point(self, event: tk.Event) -> None:
+    def add_point(self, event: Event) -> None:
         new_point = Vertex(event.x, event.y)
 
         if self.in_progress and self.intersect_already_drawn_lines(new_point):
@@ -61,7 +71,7 @@ class PolygonDrawer:
         if len(contour) > 1:
             self.draw_line(contour[-2], contour[-1])
 
-    def close_polygon(self, event: tk.Event) -> None:
+    def close_polygon(self, event: Event) -> None:
         contour = self.contours[-1]
 
         if len(contour) < 3 or self.intersect_already_drawn_lines():
@@ -99,7 +109,7 @@ class PolygonDrawer:
         self.update_button_state(self.clear_button, clear_buttons_enabled)
         self.update_button_state(self.clear_last_button, clear_buttons_enabled)
 
-    def update_button_state(self, button: tk.Button, enabled: bool) -> None:
+    def update_button_state(self, button: Button, enabled: bool) -> None:
         state = "normal" if enabled else "disabled"
         button.config(state=state)
 
