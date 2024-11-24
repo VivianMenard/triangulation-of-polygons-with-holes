@@ -8,13 +8,7 @@ from algorithms import (
     trapezoidation,
 )
 from objects import Polygon, Triangle, Vertex
-from utils import counter_clockwise, get_random_pastel_color
-
-
-def segment_intersect(ptA: Vertex, ptB: Vertex, ptC: Vertex, ptD: Vertex) -> bool:
-    return counter_clockwise(ptA, ptB, ptC) != counter_clockwise(
-        ptA, ptB, ptD
-    ) and counter_clockwise(ptC, ptD, ptA) != counter_clockwise(ptC, ptD, ptB)
+from utils import get_random_pastel_color, segment_intersect
 
 
 class PolygonDrawer:
