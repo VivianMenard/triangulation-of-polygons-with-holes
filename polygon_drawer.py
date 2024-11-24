@@ -38,14 +38,6 @@ class PolygonDrawer:
         )
         self.clear_last_button.pack(side=tk.LEFT, padx=(5, 5), pady=10)
 
-        self.triangulate_button = tk.Button(
-            root,
-            text="Triangulate",
-            command=self.triangulate,
-            state="disabled",
-        )
-        self.triangulate_button.pack(side=tk.LEFT, padx=(5, 5), pady=10)
-
         self.point_color = "red"
         self.line_color = "black"
         self.point_radius = 2
@@ -78,10 +70,12 @@ class PolygonDrawer:
     def close_polygon(self, event: tk.Event) -> None:
         contour = self.contours[-1]
 
-        if len(contour) > 2 and not self.intersect_already_drawn_lines():
-            self.draw_line(contour[-1], contour[0])
-            self.in_progress = False
-            self.update_buttons()
+        if len(contour) < 3 or self.intersect_already_drawn_lines():
+            return
+
+        self.draw_line(contour[-1], contour[0])
+        self.in_progress = False
+        self.triangulate()
 
     def clear(self) -> None:
         self.canvas.delete("all")
@@ -103,14 +97,13 @@ class PolygonDrawer:
         del self.objects_ids_by_contours[-1]
 
         self.update_buttons()
+        self.triangulate()
 
     def update_buttons(self) -> None:
         clear_buttons_enabled = bool(self.contours)
-        triangulate_button_enabled = bool(self.contours) and not self.in_progress
 
         self.update_button_state(self.clear_button, clear_buttons_enabled)
         self.update_button_state(self.clear_last_button, clear_buttons_enabled)
-        self.update_button_state(self.triangulate_button, triangulate_button_enabled)
 
     def update_button_state(self, button: tk.Button, enabled: bool) -> None:
         state = "normal" if enabled else "disabled"
