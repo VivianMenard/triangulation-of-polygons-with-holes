@@ -21,7 +21,7 @@ class PolygonDrawer:
     objects_ids_by_contours: list[list[int]]
     triangles_ids: list[int]
     in_progress: bool
-    triangle_colors: dict[tuple[int, int, int], str]
+    triangles_colors: dict[tuple[int, int, int], str]
 
     def __init__(self, root: Tk) -> None:
         self.canvas = Canvas(root, width=1000, height=600, bg="white")
@@ -43,15 +43,15 @@ class PolygonDrawer:
         )
         self.clear_last_button.pack(side=LEFT, padx=(5, 5), pady=10)
 
-        self.point_color = "red"
-        self.line_color = "black"
+        self.point_color = "brown"
+        self.line_color = "grey"
         self.point_radius = 2
 
         self.contours = []
         self.objects_ids_by_contours = []
         self.triangles_ids = []
         self.in_progress = False
-        self.triangle_colors = {}
+        self.triangles_colors = {}
 
     def add_point(self, event: Event) -> None:
         new_point = Vertex(event.x, event.y)
@@ -86,6 +86,7 @@ class PolygonDrawer:
     def clear(self) -> None:
         self.canvas.delete("all")
         self.contours = []
+        self.triangles_colors = {}
         self.in_progress = False
 
         self.update_buttons()
@@ -159,10 +160,10 @@ class PolygonDrawer:
     def get_triangle_color(self, triangle: Triangle) -> str:
         triangle_key: tuple[int, int, int] = triangle.get_hashable_key()
 
-        if triangle_key not in self.triangle_colors:
-            self.triangle_colors[triangle_key] = get_random_pastel_color()
+        if triangle_key not in self.triangles_colors:
+            self.triangles_colors[triangle_key] = get_random_pastel_color()
 
-        return self.triangle_colors[triangle_key]
+        return self.triangles_colors[triangle_key]
 
     def draw_triangle(self, triangle: Triangle) -> None:
         pt1, pt2, pt3 = triangle.vertices
@@ -172,6 +173,8 @@ class PolygonDrawer:
         triangle_id = self.canvas.create_polygon(
             pt1.x, pt1.y, pt2.x, pt2.y, pt3.x, pt3.y, fill=color, outline=color, width=1
         )
+        self.canvas.tag_lower(triangle_id)
+
         self.triangles_ids.append(triangle_id)
 
     def clear_triangulation(self) -> None:
