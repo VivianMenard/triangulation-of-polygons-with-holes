@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import platform
 import random
 from typing import TYPE_CHECKING
 
@@ -25,3 +26,16 @@ def segment_intersect(ptA: Vertex, ptB: Vertex, ptC: Vertex, ptD: Vertex) -> boo
 
 def get_random_pastel_color() -> str:
     return f"#{random.randint(100, 255):02x}{random.randint(100, 255):02x}{random.randint(100, 255):02x}"
+
+
+def set_process_dpi() -> None:
+    if platform.system() != "Windows":
+        return
+
+    try:
+        from ctypes import windll
+
+        windll.shcore.SetProcessDpiAwareness(2)
+
+    except Exception:
+        pass
