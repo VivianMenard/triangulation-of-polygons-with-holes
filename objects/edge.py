@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-
 from .vertex import Vertex
 
 
@@ -13,12 +11,6 @@ class Edge:
         self.start = start
         self.end = end
         self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
-
-    def matplotlib_display(self, color: str = "blue") -> None:
-        x = [self.start.x, self.end.x]
-        y = [self.start.y, self.end.y]
-
-        plt.plot(x, y, color=color)
 
     def get_x_by_y(self, y: float) -> float:
         start_x = self.start.x

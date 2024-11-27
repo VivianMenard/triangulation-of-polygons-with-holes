@@ -20,7 +20,3 @@ class Polygon:
             for contour in self.contours
             for i in range(len(contour))
         ]
-
-    def matplotlib_display(self) -> None:
-        for edge in self.get_edges():
-            edge.matplotlib_display()

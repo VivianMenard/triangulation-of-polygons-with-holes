@@ -4,9 +4,6 @@ from collections import defaultdict
 from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar, DefaultDict
 
-import matplotlib.pyplot as plt
-
-from constants import X_MAX, X_MIN, Y_MAX, Y_MIN
 from utils import replace
 
 from .vertex import Vertex
@@ -114,46 +111,6 @@ class Trapezoid:
             left_edge=self.left_edge,
             right_edge=self.right_edge,
         )
-
-    def matplotlib_display(self, color: str = "green", debug: bool = False) -> None:
-        y_max = Y_MAX if self.top_vertex is None else self.top_vertex.y
-        y_min = Y_MIN if self.bottom_vertex is None else self.bottom_vertex.y
-        x_min_top, x_min_bottom = X_MIN, X_MIN
-        x_max_top, x_max_bottom = X_MAX, X_MAX
-
-        if self.left_edge is not None:
-            x_min_top = self.left_edge.get_x_by_y(y_max)
-            x_min_bottom = self.left_edge.get_x_by_y(y_min)
-            plt.plot([x_min_bottom, x_min_top], [y_min, y_max], color=color)
-
-        if self.right_edge is not None:
-            x_max_top = self.right_edge.get_x_by_y(y_max)
-            x_max_bottom = self.right_edge.get_x_by_y(y_min)
-            plt.plot([x_max_bottom, x_max_top], [y_min, y_max], color=color)
-
-        if self.top_vertex is not None:
-            plt.plot([x_min_top, x_max_top], [y_max, y_max], color=color)
-
-        if self.bottom_vertex is not None:
-            plt.plot([x_min_bottom, x_max_bottom], [y_min, y_min], color=color)
-
-        if debug:
-            y_average = (y_min + y_max) / 2
-            x_average = (x_min_bottom + x_min_top + x_max_bottom + x_max_top) / 4
-
-            above_str = ", ".join([str(trap.id) for trap in self.trapezoids_above])
-            below_str = ", ".join([str(trap.id) for trap in self.trapezoids_below])
-            infos = f"{self.id}\nab: [{above_str}], be: [{below_str}]"
-
-            plt.text(
-                x_average,
-                y_average,
-                infos,
-                ha="center",
-                va="center",
-                fontsize=8,
-                color="black",
-            )
 
     def split_by_vertex(self, vertex: Vertex) -> tuple["Trapezoid", "Trapezoid"]:
         top_trapezoid = self
