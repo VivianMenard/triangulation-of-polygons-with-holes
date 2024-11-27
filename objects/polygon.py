@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class Polygon:
-    vertices: list[Vertex]
+    contours: list[list[Vertex]]
 
     def __init__(self, contours: list[list[Vertex]]) -> None:
         self.contours = contours
