@@ -184,12 +184,11 @@ class Trapezoid:
         relevant_vertex = self.top_vertex if top else self.bottom_vertex
         relevant_edge = self.right_edge if right else self.left_edge
 
-        extreme_y = relevant_vertex.y if relevant_vertex else (Y_MAX if top else Y_MIN)
-        extreme_x = (
-            relevant_edge.get_x_by_y(extreme_y)
-            if relevant_edge
-            else (X_MAX if right else X_MIN)
-        )
+        assert relevant_vertex is not None
+        assert relevant_edge is not None
+
+        extreme_y = relevant_vertex.y
+        extreme_x = relevant_edge.get_x_by_y(extreme_y)
 
         return Vertex(extreme_x, extreme_y)
 
