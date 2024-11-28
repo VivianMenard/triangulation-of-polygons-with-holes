@@ -24,7 +24,7 @@ class PolygonDrawer:
     triangles_colors: dict[tuple[int, int, int], str]
 
     def __init__(self, root: Tk) -> None:
-        self.canvas = Canvas(root, width=1000, height=600, bg="white")
+        self.canvas = Canvas(root, bg="white")
         self.canvas.pack(fill=BOTH, expand=True)
 
         self.canvas.bind("<Button-1>", self.add_point)

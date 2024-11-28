@@ -8,6 +8,7 @@ def main():
     set_process_dpi()
 
     root = tk.Tk()
+    root.state("zoomed")
     PolygonDrawer(root)
     root.mainloop()
 
