@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import cast
 
 from constants import NodeType
 from utils import replace
 
+from .edge import Edge
 from .trapezoid import Trapezoid
-
-if TYPE_CHECKING:
-    from objects import Edge, Vertex
+from .vertex import Vertex
 
 
 class Node:
     node_type: NodeType
     associated_obj: Trapezoid | Edge | Vertex
-    left_child: Node | None
-    right_child: Node | None
+    _left_child: Node | None
+    _right_child: Node | None
     parents: list[Node]
 
     def __init__(self, trapezoid: Trapezoid, parent: Node | None = None) -> None:
@@ -23,15 +22,50 @@ class Node:
         self.node_type = NodeType.TRAPEZOID
         self.associated_obj = trapezoid
         trapezoid.associated_node = self
-        self.left_child = None
-        self.right_child = None
+        self._left_child = None
+        self._right_child = None
         self.parents = []
 
         # at the time of its creation a Node can't have more thant one parent
         if parent:
             self.parents.append(parent)
 
-    def replace_by_another_node_in_tree(self, new_node: "Node") -> None:
+    @property
+    def trapezoid(self) -> Trapezoid:
+        if self.node_type != NodeType.TRAPEZOID:
+            raise Exception
+
+        return cast(Trapezoid, self.associated_obj)
+
+    @property
+    def vertex(self) -> Vertex:
+        if self.node_type != NodeType.VERTEX:
+            raise Exception
+
+        return cast(Vertex, self.associated_obj)
+
+    @property
+    def edge(self) -> Edge:
+        if self.node_type != NodeType.EDGE:
+            raise Exception
+
+        return cast(Edge, self.associated_obj)
+
+    @property
+    def left_child(self) -> Node:
+        if self._left_child is None:
+            raise Exception
+
+        return self._left_child
+
+    @property
+    def right_child(self) -> Node:
+        if self._right_child is None:
+            raise Exception
+
+        return self._right_child
+
+    def replace_by_another_node_in_tree(self, new_node: Node) -> None:
         assert self.node_type == NodeType.TRAPEZOID
         assert new_node.node_type == NodeType.TRAPEZOID
 
@@ -39,51 +73,50 @@ class Node:
             return
 
         for parent in self.parents:
-            if parent.left_child == self:
-                parent.left_child = new_node
+            if parent._left_child == self:
+                parent._left_child = new_node
 
-            elif parent.right_child == self:
-                parent.right_child = new_node
+            elif parent._right_child == self:
+                parent._right_child = new_node
 
         new_node.parents.extend(self.parents)
 
     def split_by_vertex(self, vertex: Vertex) -> None:
         assert self.node_type == NodeType.TRAPEZOID
-        bottom_trapezoid, top_trapezoid = self.associated_obj.split_by_vertex(vertex)
+        bottom_trapezoid, top_trapezoid = self.trapezoid.split_by_vertex(vertex)
 
         self.node_type = NodeType.VERTEX
         self.associated_obj = vertex
 
-        self.left_child = Node(trapezoid=bottom_trapezoid, parent=self)
-        self.right_child = Node(trapezoid=top_trapezoid, parent=self)
+        self._left_child = Node(trapezoid=bottom_trapezoid, parent=self)
+        self._right_child = Node(trapezoid=top_trapezoid, parent=self)
 
     def split_by_edge(
         self, edge: Edge, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
     ) -> None:
         assert self.node_type == NodeType.TRAPEZOID
-        left_trapezoid, right_trapezoid = self.associated_obj.split_by_edge(edge)
+        left_trapezoid, right_trapezoid = self.trapezoid.split_by_edge(edge)
 
         created_trap_couples.append((left_trapezoid, right_trapezoid))
 
         self.node_type = NodeType.EDGE
         self.associated_obj = edge
 
-        self.left_child = Node(trapezoid=left_trapezoid, parent=self)
-        self.right_child = Node(trapezoid=right_trapezoid, parent=self)
+        self._left_child = Node(trapezoid=left_trapezoid, parent=self)
+        self._right_child = Node(trapezoid=right_trapezoid, parent=self)
 
     def insert_vertex(self, vertex: Vertex) -> None:
         area = self.search_area_containing_vertex(vertex)
         area.split_by_vertex(vertex)
 
-    def search_area_containing_vertex(self, vertex: Vertex) -> "Node":
+    def search_area_containing_vertex(self, vertex: Vertex) -> Node:
         if self.node_type == NodeType.TRAPEZOID:
             return self
 
-        relevant_child = self.left_child
+        relevant_child: Node = self.left_child
 
-        if (self.node_type == NodeType.VERTEX and vertex > self.associated_obj) or (
-            self.node_type == NodeType.EDGE
-            and self.associated_obj.is_vertex_at_the_right(vertex)
+        if (self.node_type == NodeType.VERTEX and vertex > self.vertex) or (
+            self.node_type == NodeType.EDGE and self.edge.is_vertex_at_the_right(vertex)
         ):
             relevant_child = self.right_child
 
@@ -98,7 +131,7 @@ class Node:
         assert self.node_type == NodeType.TRAPEZOID
 
         nodes_to_split_down_direction: list[Node] = []
-        current_trap: Trapezoid = self.associated_obj
+        current_trap: Trapezoid = self.trapezoid
 
         while current_trap.bottom_vertex != edge.bottom_vertex:
             below = current_trap.trapezoids_below
@@ -119,12 +152,12 @@ class Node:
                     current_trap = below[trap_index]
 
                 case _:
-                    raise ValueError("Very strange...")
+                    raise Exception
 
             nodes_to_split_down_direction.append(current_trap.associated_node)
 
         nodes_to_split_up_direction: list[Node] = []
-        current_trap: Trapezoid = self.associated_obj
+        current_trap: Trapezoid = self.trapezoid
 
         while current_trap.top_vertex != edge.top_vertex:
             above = current_trap.trapezoids_above
@@ -145,7 +178,7 @@ class Node:
                     current_trap = above[trap_index]
 
                 case _:
-                    raise ValueError("Very strange...")
+                    raise Exception
 
             nodes_to_split_up_direction.append(current_trap.associated_node)
 
@@ -350,7 +383,7 @@ class Node:
             trapezoids_acc = []
 
         if self.node_type == NodeType.TRAPEZOID:
-            trapezoids_acc.append(self.associated_obj)
+            trapezoids_acc.append(self.trapezoid)
 
         else:
             self.left_child.get_all_traps(trapezoids_acc)
@@ -359,12 +392,12 @@ class Node:
         return trapezoids_acc
 
     def check_consistency(self) -> bool:
-        left_consistency = not self.left_child or (
-            self in self.left_child.parents and self.left_child.check_consistency()
+        left_consistency = not self._left_child or (
+            self in self._left_child.parents and self._left_child.check_consistency()
         )
 
-        right_consistency = not self.right_child or (
-            self in self.right_child.parents and self.right_child.check_consistency()
+        right_consistency = not self._right_child or (
+            self in self._right_child.parents and self._right_child.check_consistency()
         )
 
         return left_consistency and right_consistency

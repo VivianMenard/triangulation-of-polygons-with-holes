@@ -8,10 +8,10 @@ if TYPE_CHECKING:
     from objects import Vertex
 
 
-def replace(l: list, to_replace, replace_by) -> None:
-    for i in range(len(l)):
-        if l[i] == to_replace:
-            l[i] = replace_by
+def replace(list_to_modify: list, to_replace, replace_by) -> None:
+    for index in range(len(list_to_modify)):
+        if list_to_modify[index] == to_replace:
+            list_to_modify[index] = replace_by
 
 
 def counter_clockwise(ptA: Vertex, ptB: Vertex, ptC: Vertex) -> bool:

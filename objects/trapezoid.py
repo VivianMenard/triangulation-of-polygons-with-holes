@@ -19,23 +19,21 @@ class Trapezoid:
 
     top_vertex: Vertex | None
     bottom_vertex: Vertex | None
-    trapezoids_above: list[
-        "Trapezoid"
-    ]  # up to 2 trap above, if 2 the first is the one at the left
-    trapezoids_below: list[
-        "Trapezoid"
-    ]  # up to 2 trap below, if 2 the first is the one at the left
+    # up to 2 trap above, if 2 the first is the one at the left
+    trapezoids_above: list[Trapezoid]
+    # up to 2 trap below, if 2 the first is the one at the left
+    trapezoids_below: list[Trapezoid]
     left_edge: Edge | None
     _right_edge: Edge | None
-    associated_node: Node | None
+    _associated_node: Node | None
     inside: bool
 
     def __init__(
         self,
         top_vertex: Vertex | None = None,
         bottom_vertex: Vertex | None = None,
-        trapezoids_above: list["Trapezoid"] | None = None,
-        trapezoids_below: list["Trapezoid"] | None = None,
+        trapezoids_above: list[Trapezoid] | None = None,
+        trapezoids_below: list[Trapezoid] | None = None,
         left_edge: Edge | None = None,
         right_edge: Edge | None = None,
     ) -> None:
@@ -49,11 +47,11 @@ class Trapezoid:
         self.left_edge = left_edge
         self._right_edge = None
         self.right_edge = right_edge
-        self.associated_node = None
+        self._associated_node = None
         self.inside = False
 
     @classmethod
-    def merge(cls, top_trap: "Trapezoid", bottom_trap: "Trapezoid") -> None:
+    def merge(cls, top_trap: Trapezoid, bottom_trap: Trapezoid) -> None:
         assert (
             top_trap in bottom_trap.trapezoids_above
             and bottom_trap in top_trap.trapezoids_below
@@ -75,11 +73,22 @@ class Trapezoid:
         bottom_trap.remove_from_edge_registry()
 
     @property
+    def associated_node(self) -> Node:
+        if self._associated_node is None:
+            raise Exception
+
+        return self._associated_node
+
+    @associated_node.setter
+    def associated_node(self, new_node: Node) -> None:
+        self._associated_node = new_node
+
+    @property
     def right_edge(self) -> Edge | None:
         return self._right_edge
 
     @right_edge.setter
-    def right_edge(self, new_right_edge: Edge) -> None:
+    def right_edge(self, new_right_edge: Edge | None) -> None:
         self.remove_from_edge_registry()
 
         self._right_edge = new_right_edge
@@ -104,7 +113,7 @@ class Trapezoid:
 
         return not left_trap.is_inside
 
-    def duplicate(self) -> "Trapezoid":
+    def duplicate(self) -> Trapezoid:
         return Trapezoid(
             top_vertex=self.top_vertex,
             bottom_vertex=self.bottom_vertex,
@@ -112,7 +121,7 @@ class Trapezoid:
             right_edge=self.right_edge,
         )
 
-    def split_by_vertex(self, vertex: Vertex) -> tuple["Trapezoid", "Trapezoid"]:
+    def split_by_vertex(self, vertex: Vertex) -> tuple[Trapezoid, Trapezoid]:
         top_trapezoid = self
         bottom_trapezoid = self.duplicate()
 
@@ -128,7 +137,7 @@ class Trapezoid:
 
         return (bottom_trapezoid, top_trapezoid)
 
-    def split_by_edge(self, edge: Edge) -> tuple["Trapezoid", "Trapezoid"]:
+    def split_by_edge(self, edge: Edge) -> tuple[Trapezoid, Trapezoid]:
         right_trapezoid = self
         left_trapezoid = self.duplicate()
 

@@ -16,7 +16,7 @@ class Polygon:
 
     def get_edges(self) -> list[Edge]:
         return [
-            Edge(contour[i], contour[(i + 1) % len(contour)])
+            Edge(contour[vertex_index], contour[(vertex_index + 1) % len(contour)])
             for contour in self.contours
-            for i in range(len(contour))
+            for vertex_index in range(len(contour))
         ]
