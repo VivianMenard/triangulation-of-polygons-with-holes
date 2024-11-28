@@ -157,14 +157,3 @@ class Trapezoid:
         extreme_x = relevant_edge.get_x_by_y(extreme_y)
 
         return Vertex(extreme_x, extreme_y)
-
-    def check_neighbors(self) -> bool:
-        for trap in self.trapezoids_below:
-            if self not in trap.trapezoids_above:
-                return False
-
-        for trap in self.trapezoids_above:
-            if self not in trap.trapezoids_below:
-                return False
-
-        return True

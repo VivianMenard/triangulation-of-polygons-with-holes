@@ -390,14 +390,3 @@ class Node:
             self.right_child.get_all_traps(trapezoids_acc)
 
         return trapezoids_acc
-
-    def check_consistency(self) -> bool:
-        left_consistency = not self._left_child or (
-            self in self._left_child.parents and self._left_child.check_consistency()
-        )
-
-        right_consistency = not self._right_child or (
-            self in self._right_child.parents and self._right_child.check_consistency()
-        )
-
-        return left_consistency and right_consistency
