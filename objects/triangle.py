@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from utils import counter_clockwise
+
 if TYPE_CHECKING:
     from .vertex import Vertex
 
@@ -11,6 +13,7 @@ class Triangle:
 
     def __init__(self, vertices: list[Vertex]) -> None:
         assert len(vertices) == 3
+        assert counter_clockwise(*vertices)
 
         self.vertices = vertices
 

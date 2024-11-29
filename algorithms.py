@@ -125,9 +125,12 @@ def triangulate_monotone_mountain(
         )
 
         if is_current_vertex_convex:
-            triangles.append(
-                Triangle([below.vertex, current_vertex.vertex, above.vertex])
+            vertices_counter_clockwise = (
+                [below.vertex, current_vertex.vertex, above.vertex]
+                if convex_order
+                else [below.vertex, above.vertex, current_vertex.vertex]
             )
+            triangles.append(Triangle(vertices_counter_clockwise))
             below.above = above
             above.below = below
             current_vertex = above if below.is_base_vertex else below
