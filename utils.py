@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import platform
 import random
+from tkinter import Tk
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -39,3 +40,10 @@ def set_process_dpi() -> None:
 
     except Exception:
         pass
+
+
+def expand_app(root: Tk) -> None:
+    if platform.system() != "Windows":
+        return
+
+    root.state("zoomed")
