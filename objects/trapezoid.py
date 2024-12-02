@@ -60,9 +60,7 @@ class Trapezoid:
         assert top_trap.right_edge == bottom_trap.right_edge
 
         top_trap.bottom_vertex = bottom_trap.bottom_vertex
-        top_trap.trapezoids_below = (
-            bottom_trap.trapezoids_below.copy()
-        )  # I don't know if copy in necessary here
+        top_trap.trapezoids_below = bottom_trap.trapezoids_below
 
         for trap in bottom_trap.trapezoids_below:
             replace(trap.trapezoids_above, bottom_trap, top_trap)
@@ -130,7 +128,7 @@ class Trapezoid:
 
         # top_trapezoid = self -> no need to change trapezoids_above
         bottom_trapezoid.trapezoids_above = [top_trapezoid]
-        bottom_trapezoid.trapezoids_below = self.trapezoids_below.copy()
+        bottom_trapezoid.trapezoids_below = self.trapezoids_below
         for trap in self.trapezoids_below:
             replace(trap.trapezoids_above, self, bottom_trapezoid)
         top_trapezoid.trapezoids_below = [bottom_trapezoid]

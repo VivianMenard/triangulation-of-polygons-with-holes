@@ -230,9 +230,7 @@ class Node:
                 == edge.top_vertex
             ):  # right upward peak with an old edge
                 assert len(first_trap_right.trapezoids_above) == 1
-                first_trap_left.trapezoids_above = (
-                    first_trap_right.trapezoids_above.copy()
-                )
+                first_trap_left.trapezoids_above = first_trap_right.trapezoids_above
                 first_trap_right.trapezoids_above = []
                 replace(
                     first_trap_left.trapezoids_above[0].trapezoids_below,
@@ -269,9 +267,7 @@ class Node:
                 == edge.bottom_vertex
             ):  # right downward peak with an old edge
                 assert len(last_trap_right.trapezoids_below) == 1
-                last_trap_left.trapezoids_below = (
-                    last_trap_right.trapezoids_below.copy()
-                )
+                last_trap_left.trapezoids_below = last_trap_right.trapezoids_below
                 last_trap_right.trapezoids_below = []
                 replace(
                     last_trap_left.trapezoids_below[0].trapezoids_above,
