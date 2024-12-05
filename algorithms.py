@@ -16,11 +16,11 @@ from objects import (
 from utils import counter_clockwise
 
 if TYPE_CHECKING:
-    from objects import Polygon
+    from objects import PolygonArea
 
 
-def trapezoidation(polygon: Polygon) -> Node:
-    edges: list[Edge] = polygon.get_edges()
+def trapezoidation(polygon_area: PolygonArea) -> Node:
+    edges: list[Edge] = polygon_area.get_edges()
     shuffle(edges)
 
     search_tree = Node(trapezoid=Trapezoid())

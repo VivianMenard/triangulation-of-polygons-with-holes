@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from polygon_drawer import PolygonDrawer
+from polygon_area_drawer import PolygonAreaDrawer
 from utils import expand_app, set_process_dpi
 
 
@@ -9,7 +9,7 @@ def main():
 
     root = tk.Tk()
     expand_app(root)
-    PolygonDrawer(root)
+    PolygonAreaDrawer(root)
 
     root.mainloop()
 

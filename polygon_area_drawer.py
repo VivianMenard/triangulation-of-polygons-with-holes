@@ -6,19 +6,19 @@ from algorithms import (
     select_inside_trapezoids,
     trapezoidation,
 )
-from objects import Polygon, Triangle, Vertex
+from objects import Polygon, PolygonArea, Triangle, Vertex
 from utils import get_random_pastel_color, segment_intersect
 
 
-class PolygonDrawer:
+class PolygonAreaDrawer:
     canvas: Canvas
     clear_button: Button
     clear_last_button: Button
     point_color: str
     line_color: str
     point_radius: int
-    contours: list[list[Vertex]]
-    objects_ids_by_contours: list[list[int]]
+    polygons: list[Polygon]
+    objects_ids_by_polygon: list[list[int]]
     triangles_ids: list[int]
     in_progress: bool
     triangles_colors: dict[tuple[int, int, int], str]
@@ -37,8 +37,8 @@ class PolygonDrawer:
 
         self.clear_last_button = Button(
             root,
-            text="Clear last contour",
-            command=self.clear_last_contour,
+            text="Clear last polygon",
+            command=self.clear_last_polygon,
             state="disabled",
         )
         self.clear_last_button.pack(side=LEFT, padx=(5, 5), pady=10)
@@ -47,8 +47,8 @@ class PolygonDrawer:
         self.line_color = "grey"
         self.point_radius = 2
 
-        self.contours = []
-        self.objects_ids_by_contours = []
+        self.polygons = []
+        self.objects_ids_by_polygon = []
         self.triangles_ids = []
         self.in_progress = False
         self.triangles_colors = {}
@@ -60,54 +60,54 @@ class PolygonDrawer:
             return
 
         if not self.in_progress:
-            self.contours.append([])
-            self.objects_ids_by_contours.append([])
+            self.polygons.append([])
+            self.objects_ids_by_polygon.append([])
             self.in_progress = True
 
             self.update_buttons()
 
-        contour = self.contours[-1]
-        contour.append(new_point)
+        polygon = self.polygons[-1]
+        polygon.append(new_point)
         self.draw_point(new_point)
 
-        if len(contour) > 1:
-            self.draw_line(contour[-2], contour[-1])
+        if len(polygon) > 1:
+            self.draw_line(polygon[-2], polygon[-1])
 
-    def close_polygon(self, event: Event) -> None:
-        contour = self.contours[-1]
+    def close_polygon(self, _: Event) -> None:
+        polygon = self.polygons[-1]
 
-        if len(contour) < 3 or self.intersect_already_drawn_lines():
+        if len(polygon) < 3 or self.intersect_already_drawn_lines():
             return
 
-        self.draw_line(contour[-1], contour[0])
+        self.draw_line(polygon[-1], polygon[0])
         self.in_progress = False
         self.triangulate()
 
     def clear(self) -> None:
         self.canvas.delete("all")
-        self.contours = []
+        self.polygons = []
         self.triangles_colors = {}
         self.in_progress = False
 
         self.update_buttons()
 
-    def clear_last_contour(self) -> None:
-        if not self.contours:
+    def clear_last_polygon(self) -> None:
+        if not self.polygons:
             return
 
-        del self.contours[-1]
+        del self.polygons[-1]
         self.in_progress = False
 
-        for line_id in self.objects_ids_by_contours[-1]:
+        for line_id in self.objects_ids_by_polygon[-1]:
             self.canvas.delete(line_id)
 
-        del self.objects_ids_by_contours[-1]
+        del self.objects_ids_by_polygon[-1]
 
         self.update_buttons()
         self.triangulate()
 
     def update_buttons(self) -> None:
-        clear_buttons_enabled = bool(self.contours)
+        clear_buttons_enabled = bool(self.polygons)
 
         self.update_button_state(self.clear_button, clear_buttons_enabled)
         self.update_button_state(self.clear_last_button, clear_buttons_enabled)
@@ -124,13 +124,13 @@ class PolygonDrawer:
             point.y + self.point_radius,
             fill=self.point_color,
         )
-        self.objects_ids_by_contours[-1].append(pt_id)
+        self.objects_ids_by_polygon[-1].append(pt_id)
 
     def draw_line(self, ptA: Vertex, ptB: Vertex) -> None:
         line_id = self.canvas.create_line(
             (ptA.x, ptA.y), (ptB.x, ptB.y), fill=self.line_color
         )
-        self.objects_ids_by_contours[-1].append(line_id)
+        self.objects_ids_by_polygon[-1].append(line_id)
 
     def intersect_already_drawn_lines(self, new_pt: Vertex | None = None) -> bool:
         """
@@ -138,19 +138,19 @@ class PolygonDrawer:
         otherwise it tests if closing the polygon will do so.
         """
         closing = new_pt is None
-        beg_new_line = self.contours[-1][-1]
+        beg_new_line = self.polygons[-1][-1]
 
         if closing:
-            new_pt = self.contours[-1][0]
+            new_pt = self.polygons[-1][0]
 
-        for contour_index, contour in enumerate(self.contours):
-            is_last_contour = contour_index == len(self.contours) - 1
-            beg = 1 if is_last_contour and closing else 0
-            end_offset = 2 if is_last_contour else 0
+        for polygon_index, polygon in enumerate(self.polygons):
+            is_last_polygon = polygon_index == len(self.polygons) - 1
+            beg = 1 if is_last_polygon and closing else 0
+            end_offset = 2 if is_last_polygon else 0
 
-            for pt_index in range(beg, len(contour) - end_offset):
-                ptA = contour[pt_index]
-                ptB = contour[(pt_index + 1) % len(contour)]
+            for pt_index in range(beg, len(polygon) - end_offset):
+                ptA = polygon[pt_index]
+                ptB = polygon[(pt_index + 1) % len(polygon)]
 
                 if segment_intersect(ptA, ptB, beg_new_line, new_pt):
                     return True
@@ -184,9 +184,9 @@ class PolygonDrawer:
     def triangulate(self) -> None:
         self.clear_triangulation()
 
-        polygon = Polygon(self.contours)
+        polygon_area = PolygonArea(self.polygons)
 
-        search_tree = trapezoidation(polygon)
+        search_tree = trapezoidation(polygon_area)
 
         all_trapezoids = search_tree.get_all_traps()
 
