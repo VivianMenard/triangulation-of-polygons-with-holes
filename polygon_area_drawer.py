@@ -1,3 +1,4 @@
+import math
 from tkinter import BOTH, LEFT, Button, Canvas, Event, Tk
 
 from algorithms import (
@@ -56,7 +57,9 @@ class PolygonAreaDrawer:
     def add_point(self, event: Event) -> None:
         new_point = Vertex(event.x, event.y)
 
-        if self.in_progress and self.intersect_already_drawn_lines(new_point):
+        if self.is_same_as_another_point(new_point) or self.draws_intersecting_lines(
+            new_point
+        ):
             return
 
         if not self.in_progress:
@@ -76,7 +79,7 @@ class PolygonAreaDrawer:
     def close_polygon(self, _: Event) -> None:
         polygon = self.polygons[-1]
 
-        if len(polygon) < 3 or self.intersect_already_drawn_lines():
+        if len(polygon) < 3 or self.draws_intersecting_lines():
             return
 
         self.draw_line(polygon[-1], polygon[0])
@@ -132,11 +135,14 @@ class PolygonAreaDrawer:
         )
         self.objects_ids_by_polygon[-1].append(line_id)
 
-    def intersect_already_drawn_lines(self, new_pt: Vertex | None = None) -> bool:
+    def draws_intersecting_lines(self, new_pt: Vertex | None = None) -> bool:
         """
         If you specify a new_pt it tests if adding the new pt to the polygon will make intersecting edges,
         otherwise it tests if closing the polygon will do so.
         """
+        if not self.in_progress:
+            return False
+
         closing = new_pt is None
         beg_new_line = self.polygons[-1][-1]
 
@@ -153,6 +159,16 @@ class PolygonAreaDrawer:
                 ptB = polygon[(pt_index + 1) % len(polygon)]
 
                 if segment_intersect(ptA, ptB, beg_new_line, new_pt):
+                    return True
+
+        return False
+
+    def is_same_as_another_point(self, new_point: Vertex) -> bool:
+        for polygon in self.polygons:
+            for point in polygon:
+                if math.isclose(new_point.x, point.x) and math.isclose(
+                    new_point.y, point.y
+                ):
                     return True
 
         return False
