@@ -4,6 +4,7 @@ from collections import defaultdict
 from random import shuffle
 from typing import TYPE_CHECKING, cast
 
+from exceptions import InconsistentTrapezoid
 from objects import (
     Edge,
     MonotoneMountain,
@@ -64,7 +65,8 @@ def make_monotone_mountains(
             ):
                 mountain_bases.append(edge)
 
-        assert len(mountain_bases) > 0
+        if not len(mountain_bases):
+            raise InconsistentTrapezoid
 
         for mountain_base in mountain_bases:
             above_vertex_by_base_edge[mountain_base][

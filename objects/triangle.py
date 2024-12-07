@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from exceptions import BadVertexOrder
 from utils import counter_clockwise
 
 if TYPE_CHECKING:
@@ -12,7 +13,8 @@ class Triangle:
     vertices: tuple[Vertex, Vertex, Vertex]
 
     def __init__(self, vertices: tuple[Vertex, Vertex, Vertex]) -> None:
-        assert counter_clockwise(*vertices)
+        if not counter_clockwise(*vertices):
+            raise BadVertexOrder
 
         self.vertices = vertices
 

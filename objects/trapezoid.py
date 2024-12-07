@@ -4,6 +4,11 @@ from collections import defaultdict
 from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar, DefaultDict
 
+from exceptions import (
+    InconsistentArguments,
+    NonExistingAttribute,
+    NonExistingExtremePoint,
+)
 from utils import replace
 
 from .vertex import Vertex
@@ -52,12 +57,13 @@ class Trapezoid:
 
     @classmethod
     def merge(cls, top_trap: Trapezoid, bottom_trap: Trapezoid) -> None:
-        assert (
-            top_trap in bottom_trap.trapezoids_above
-            and bottom_trap in top_trap.trapezoids_below
-        )
-        assert top_trap.left_edge == bottom_trap.left_edge
-        assert top_trap.right_edge == bottom_trap.right_edge
+        if (
+            top_trap not in bottom_trap.trapezoids_above
+            or bottom_trap not in top_trap.trapezoids_below
+            or top_trap.left_edge != bottom_trap.left_edge
+            or top_trap.right_edge != bottom_trap.right_edge
+        ):
+            raise InconsistentArguments
 
         top_trap.bottom_vertex = bottom_trap.bottom_vertex
         top_trap.trapezoids_below = bottom_trap.trapezoids_below
@@ -73,7 +79,7 @@ class Trapezoid:
     @property
     def associated_node(self) -> Node:
         if self._associated_node is None:
-            raise Exception
+            raise NonExistingAttribute
 
         return self._associated_node
 
@@ -148,8 +154,8 @@ class Trapezoid:
         relevant_vertex = self.top_vertex if top else self.bottom_vertex
         relevant_edge = self.right_edge if right else self.left_edge
 
-        assert relevant_vertex is not None
-        assert relevant_edge is not None
+        if relevant_vertex is None or relevant_edge is None:
+            raise NonExistingExtremePoint
 
         extreme_y = relevant_vertex.y
         extreme_x = relevant_edge.get_x_by_y(extreme_y)

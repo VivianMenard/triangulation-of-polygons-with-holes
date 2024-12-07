@@ -3,6 +3,8 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from exceptions import MonotonyRuleNotRespected, NonExistingAttribute
+
 if TYPE_CHECKING:
     from objects import Vertex
 
@@ -28,25 +30,29 @@ class MonotoneVertex:
     @property
     def above(self) -> MonotoneVertex:
         if not self._above:
-            raise Exception
+            raise NonExistingAttribute
 
         return self._above
 
     @property
     def below(self) -> MonotoneVertex:
         if not self._below:
-            raise Exception
+            raise NonExistingAttribute
 
         return self._below
 
     @above.setter
     def above(self, new_above: MonotoneVertex | None) -> None:
-        assert new_above is None or self.vertex < new_above.vertex
+        if new_above is not None and self.vertex > new_above.vertex:
+            raise MonotonyRuleNotRespected
+
         self._above = new_above
 
     @below.setter
     def below(self, new_below: MonotoneVertex | None) -> None:
-        assert new_below is None or self.vertex > new_below.vertex
+        if new_below is not None and self.vertex < new_below.vertex:
+            raise MonotonyRuleNotRespected
+
         self._below = new_below
 
     @cached_property

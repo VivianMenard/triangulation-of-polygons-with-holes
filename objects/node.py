@@ -3,6 +3,12 @@ from __future__ import annotations
 from typing import cast
 
 from constants import NodeType
+from exceptions import (
+    InconsistentArguments,
+    InconsistentTrapezoidNeighborhood,
+    NonExistingAttribute,
+    NotATrapezoid,
+)
 from utils import replace
 
 from .edge import Edge
@@ -33,41 +39,47 @@ class Node:
     @property
     def trapezoid(self) -> Trapezoid:
         if self.node_type != NodeType.TRAPEZOID:
-            raise Exception
+            raise NonExistingAttribute
 
         return cast(Trapezoid, self.associated_obj)
 
     @property
     def vertex(self) -> Vertex:
         if self.node_type != NodeType.VERTEX:
-            raise Exception
+            raise NonExistingAttribute
 
         return cast(Vertex, self.associated_obj)
 
     @property
     def edge(self) -> Edge:
         if self.node_type != NodeType.EDGE:
-            raise Exception
+            raise NonExistingAttribute
 
         return cast(Edge, self.associated_obj)
 
     @property
     def left_child(self) -> Node:
         if self._left_child is None:
-            raise Exception
+            raise NonExistingAttribute
 
         return self._left_child
 
     @property
     def right_child(self) -> Node:
         if self._right_child is None:
-            raise Exception
+            raise NonExistingAttribute
 
         return self._right_child
 
+    def make_sure_it_is_a_trapezoid(self) -> None:
+        if self.node_type != NodeType.TRAPEZOID:
+            raise NotATrapezoid
+
     def replace_by_another_node_in_tree(self, new_node: Node) -> None:
-        assert self.node_type == NodeType.TRAPEZOID
-        assert new_node.node_type == NodeType.TRAPEZOID
+        self.make_sure_it_is_a_trapezoid()
+
+        if new_node.node_type != NodeType.TRAPEZOID:
+            raise InconsistentArguments
 
         if new_node == self:
             return
@@ -82,7 +94,8 @@ class Node:
         new_node.parents.extend(self.parents)
 
     def split_by_vertex(self, vertex: Vertex) -> None:
-        assert self.node_type == NodeType.TRAPEZOID
+        self.make_sure_it_is_a_trapezoid()
+
         bottom_trapezoid, top_trapezoid = self.trapezoid.split_by_vertex(vertex)
 
         self.node_type = NodeType.VERTEX
@@ -94,7 +107,8 @@ class Node:
     def split_by_edge(
         self, edge: Edge, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
     ) -> None:
-        assert self.node_type == NodeType.TRAPEZOID
+        self.make_sure_it_is_a_trapezoid()
+
         left_trapezoid, right_trapezoid = self.trapezoid.split_by_edge(edge)
 
         created_trap_couples.append((left_trapezoid, right_trapezoid))
@@ -128,7 +142,7 @@ class Node:
         top_vertex_just_inserted: bool,
         bottom_vertex_just_inserted: bool,
     ) -> None:
-        assert self.node_type == NodeType.TRAPEZOID
+        self.make_sure_it_is_a_trapezoid()
 
         nodes_to_split_down_direction: list[Node] = []
         current_trap: Trapezoid = self.trapezoid
@@ -152,7 +166,7 @@ class Node:
                     current_trap = below[trap_index]
 
                 case _:
-                    raise Exception
+                    raise InconsistentTrapezoidNeighborhood
 
             nodes_to_split_down_direction.append(current_trap.associated_node)
 
@@ -178,7 +192,7 @@ class Node:
                     current_trap = above[trap_index]
 
                 case _:
-                    raise Exception
+                    raise InconsistentTrapezoidNeighborhood
 
             nodes_to_split_up_direction.append(current_trap.associated_node)
 
@@ -212,7 +226,9 @@ class Node:
         if top_vertex_just_inserted:
             # only 1 trap above and it needs to be above for both
             # but already above for right
-            assert len(first_trap_right.trapezoids_above) == 1
+            if len(first_trap_right.trapezoids_above) != 1:
+                raise InconsistentTrapezoidNeighborhood
+
             first_trap_left.trapezoids_above = first_trap_right.trapezoids_above.copy()
             trap_above = first_trap_right.trapezoids_above[0]
             trap_above.trapezoids_below = [first_trap_left, first_trap_right]
@@ -222,14 +238,18 @@ class Node:
                 getattr(first_trap_left.left_edge, "top_vertex", None)
                 == edge.top_vertex
             ):  # left upward peak with an old edge
-                assert len(first_trap_right.trapezoids_above) == 1
+                if len(first_trap_right.trapezoids_above) != 1:
+                    raise InconsistentTrapezoidNeighborhood
+
                 # nothing to do
 
             elif (
                 getattr(first_trap_right.right_edge, "top_vertex", None)
                 == edge.top_vertex
             ):  # right upward peak with an old edge
-                assert len(first_trap_right.trapezoids_above) == 1
+                if len(first_trap_right.trapezoids_above) != 1:
+                    raise InconsistentTrapezoidNeighborhood
+
                 first_trap_left.trapezoids_above = first_trap_right.trapezoids_above
                 first_trap_right.trapezoids_above = []
                 replace(
@@ -239,7 +259,9 @@ class Node:
                 )
 
             else:  # the new edge just extend an old edge above
-                assert len(first_trap_right.trapezoids_above) == 2
+                if len(first_trap_right.trapezoids_above) != 2:
+                    raise InconsistentTrapezoidNeighborhood
+
                 left_above, right_above = first_trap_right.trapezoids_above
                 first_trap_left.trapezoids_above = [left_above]
                 first_trap_right.trapezoids_above = [right_above]
@@ -249,7 +271,9 @@ class Node:
         if bottom_vertex_just_inserted:
             # only 1 trap below and it needs to be below for both
             # but already below for right
-            assert len(last_trap_right.trapezoids_below) == 1
+            if len(last_trap_right.trapezoids_below) != 1:
+                raise InconsistentTrapezoidNeighborhood
+
             last_trap_left.trapezoids_below = last_trap_right.trapezoids_below.copy()
             trap_below = last_trap_right.trapezoids_below[0]
             trap_below.trapezoids_above = [last_trap_left, last_trap_right]
@@ -259,14 +283,18 @@ class Node:
                 getattr(last_trap_left.left_edge, "bottom_vertex", None)
                 == edge.bottom_vertex
             ):  # left downward peak with an old edge
-                assert len(last_trap_right.trapezoids_below) == 1
+                if len(last_trap_right.trapezoids_below) != 1:
+                    raise InconsistentTrapezoidNeighborhood
+
                 # nothing to do
 
             elif (
                 getattr(last_trap_right.right_edge, "bottom_vertex", None)
                 == edge.bottom_vertex
             ):  # right downward peak with an old edge
-                assert len(last_trap_right.trapezoids_below) == 1
+                if len(last_trap_right.trapezoids_below) != 1:
+                    raise InconsistentTrapezoidNeighborhood
+
                 last_trap_left.trapezoids_below = last_trap_right.trapezoids_below
                 last_trap_right.trapezoids_below = []
                 replace(
@@ -276,7 +304,9 @@ class Node:
                 )
 
             else:  # the new edge just extend an old edge below
-                assert len(last_trap_right.trapezoids_below) == 2
+                if len(last_trap_right.trapezoids_below) != 2:
+                    raise InconsistentTrapezoidNeighborhood
+
                 left_below, right_below = last_trap_right.trapezoids_below
                 last_trap_left.trapezoids_below = [left_below]
                 last_trap_right.trapezoids_below = [right_below]
@@ -289,7 +319,8 @@ class Node:
             bottom_left_trap, bottom_right_trap = created_trap_couples[i + 1]
 
             if len(top_right_trap.trapezoids_below) == 2:  # downward branch
-                assert len(bottom_right_trap.trapezoids_above) == 1
+                if len(bottom_right_trap.trapezoids_above) != 1:
+                    raise InconsistentTrapezoidNeighborhood
 
                 branch_point = top_right_trap.trapezoids_below[0].get_extreme_point(
                     top=True, right=True
@@ -312,9 +343,12 @@ class Node:
                     additional_bottom_left_trap.trapezoids_above = [top_left_trap]
 
             else:
-                assert len(top_right_trap.trapezoids_below) == 1
+                if len(top_right_trap.trapezoids_below) != 1:
+                    raise InconsistentTrapezoidNeighborhood
+
                 if len(bottom_right_trap.trapezoids_above) == 2:  # upward branch
-                    assert len(top_right_trap.trapezoids_below) == 1
+                    if len(top_right_trap.trapezoids_below) != 1:
+                        raise InconsistentTrapezoidNeighborhood
 
                     branch_point = bottom_right_trap.trapezoids_above[
                         0
@@ -337,8 +371,8 @@ class Node:
                         additional_top_left_trap.trapezoids_below = [bottom_left_trap]
 
                 else:
-                    assert len(top_right_trap.trapezoids_below) == 1
-                    assert len(bottom_right_trap.trapezoids_above) == 1
+                    if len(bottom_right_trap.trapezoids_above) != 1:
+                        raise InconsistentTrapezoidNeighborhood
 
                     top_left_trap.trapezoids_below = [bottom_left_trap]
                     bottom_left_trap.trapezoids_above = [top_left_trap]
