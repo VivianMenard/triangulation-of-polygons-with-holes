@@ -26,11 +26,17 @@ class MonotoneVertex:
         self.below = below
 
     @property
-    def above(self):
+    def above(self) -> MonotoneVertex:
+        if not self._above:
+            raise Exception
+
         return self._above
 
     @property
-    def below(self):
+    def below(self) -> MonotoneVertex:
+        if not self._below:
+            raise Exception
+
         return self._below
 
     @above.setter
@@ -45,4 +51,4 @@ class MonotoneVertex:
 
     @cached_property
     def is_base_vertex(self):
-        return self.above is None or self.below is None
+        return self._above is None or self._below is None

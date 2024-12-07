@@ -104,9 +104,7 @@ def triangulate_monotone_mountain(
     if mountain.is_degenerated:
         return
 
-    first_non_base_vertex: MonotoneVertex = cast(
-        MonotoneVertex, mountain.bottom_vertex.above
-    )
+    first_non_base_vertex: MonotoneVertex = mountain.bottom_vertex.above
 
     convex_order: bool = counter_clockwise(
         mountain.base.top_vertex,
@@ -117,8 +115,8 @@ def triangulate_monotone_mountain(
     current_vertex: MonotoneVertex = first_non_base_vertex
 
     while not current_vertex.is_base_vertex:
-        below = cast(MonotoneVertex, current_vertex.below)
-        above = cast(MonotoneVertex, current_vertex.above)
+        below = current_vertex.below
+        above = current_vertex.above
         is_current_vertex_convex = (
             counter_clockwise(below.vertex, current_vertex.vertex, above.vertex)
             == convex_order
