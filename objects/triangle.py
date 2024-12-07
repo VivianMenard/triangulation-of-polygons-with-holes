@@ -9,10 +9,9 @@ if TYPE_CHECKING:
 
 
 class Triangle:
-    vertices: list[Vertex]
+    vertices: tuple[Vertex, Vertex, Vertex]
 
-    def __init__(self, vertices: list[Vertex]) -> None:
-        assert len(vertices) == 3
+    def __init__(self, vertices: tuple[Vertex, Vertex, Vertex]) -> None:
         assert counter_clockwise(*vertices)
 
         self.vertices = vertices
