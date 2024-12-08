@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import chain
 from typing import cast
 
 from constants import NodeType
@@ -136,6 +137,48 @@ class Node:
 
         return relevant_child.search_area_containing_vertex(vertex)
 
+    def find_nodes_to_split_in_direction(
+        self, edge: Edge, up_direction: bool
+    ) -> list[Node]:
+        nodes_to_split: list[Node] = []
+        current_trap: Trapezoid = self.trapezoid
+
+        def is_the_end_of_edge(current_trap):
+            relevant_vertex_attr = "top_vertex" if up_direction else "bottom_vertex"
+            return getattr(current_trap, relevant_vertex_attr) == getattr(
+                edge, relevant_vertex_attr
+            )
+
+        while not is_the_end_of_edge(current_trap):
+            next_traps_in_direction = getattr(
+                current_trap, "trapezoids_above" if up_direction else "trapezoids_below"
+            )
+
+            match len(next_traps_in_direction):
+                case 1:
+                    current_trap = next_traps_in_direction[0]
+
+                case 2:
+                    left_trap_in_direction = next_traps_in_direction[0]
+                    left_trap_relevant_rightmost_pt = (
+                        left_trap_in_direction.get_extreme_point(
+                            top=not up_direction, right=True
+                        )
+                    )
+                    trap_index = (
+                        0
+                        if edge.is_vertex_at_the_right(left_trap_relevant_rightmost_pt)
+                        else 1
+                    )
+                    current_trap = next_traps_in_direction[trap_index]
+
+                case _:
+                    raise InconsistentTrapezoidNeighborhood
+
+            nodes_to_split.append(current_trap.associated_node)
+
+        return nodes_to_split
+
     def insert_edge(
         self,
         edge: Edge,
@@ -144,66 +187,17 @@ class Node:
     ) -> None:
         self.make_sure_it_is_a_trapezoid()
 
-        nodes_to_split_down_direction: list[Node] = []
-        current_trap: Trapezoid = self.trapezoid
-
-        while current_trap.bottom_vertex != edge.bottom_vertex:
-            below = current_trap.trapezoids_below
-            match len(below):
-                case 1:
-                    current_trap = below[0]
-
-                case 2:
-                    left_trap_below = below[0]
-                    left_trap_top_rightmost_pt = left_trap_below.get_extreme_point(
-                        top=True, right=True
-                    )
-                    trap_index = (
-                        0
-                        if edge.is_vertex_at_the_right(left_trap_top_rightmost_pt)
-                        else 1
-                    )
-                    current_trap = below[trap_index]
-
-                case _:
-                    raise InconsistentTrapezoidNeighborhood
-
-            nodes_to_split_down_direction.append(current_trap.associated_node)
-
-        nodes_to_split_up_direction: list[Node] = []
-        current_trap: Trapezoid = self.trapezoid
-
-        while current_trap.top_vertex != edge.top_vertex:
-            above = current_trap.trapezoids_above
-            match len(above):
-                case 1:
-                    current_trap = above[0]
-
-                case 2:
-                    left_trap_above = above[0]
-                    left_trap_bottom_rightmost_pt = left_trap_above.get_extreme_point(
-                        top=False, right=True
-                    )
-                    trap_index = (
-                        0
-                        if edge.is_vertex_at_the_right(left_trap_bottom_rightmost_pt)
-                        else 1
-                    )
-                    current_trap = above[trap_index]
-
-                case _:
-                    raise InconsistentTrapezoidNeighborhood
-
-            nodes_to_split_up_direction.append(current_trap.associated_node)
-
-        nodes_to_split_up_direction.reverse()
-
-        nodes_to_split = (
-            nodes_to_split_up_direction + [self] + nodes_to_split_down_direction
+        nodes_to_split_down_direction = self.find_nodes_to_split_in_direction(
+            edge, up_direction=False
+        )
+        nodes_to_split_up_direction = self.find_nodes_to_split_in_direction(
+            edge, up_direction=True
         )
 
         created_trap_couples: list[tuple[Trapezoid, Trapezoid]] = []
-        for node_to_split in nodes_to_split:
+        for node_to_split in chain(
+            reversed(nodes_to_split_up_direction), [self], nodes_to_split_down_direction
+        ):  # iterates on nodes to split from top to bottom
             node_to_split.split_by_edge(edge, created_trap_couples)
 
         self.manage_adjacents_trap_after_edge_split(
