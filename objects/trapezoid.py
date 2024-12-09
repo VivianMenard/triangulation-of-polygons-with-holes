@@ -5,7 +5,6 @@ from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar, DefaultDict
 
 from exceptions import (
-    InconsistentArguments,
     NonExistingAttribute,
     NonExistingExtremePoint,
 )
@@ -56,14 +55,12 @@ class Trapezoid:
         self.inside = False
 
     @classmethod
-    def merge(cls, top_trap: Trapezoid, bottom_trap: Trapezoid) -> None:
-        if (
-            top_trap not in bottom_trap.trapezoids_above
-            or bottom_trap not in top_trap.trapezoids_below
-            or top_trap.left_edge != bottom_trap.left_edge
-            or top_trap.right_edge != bottom_trap.right_edge
-        ):
-            raise InconsistentArguments
+    def merge_trapezoids_stack(cls, trapezoids_stack: list[Trapezoid]) -> None:
+        if len(trapezoids_stack) < 2:
+            return
+
+        top_trap = trapezoids_stack[0]
+        bottom_trap = trapezoids_stack[-1]
 
         top_trap.bottom_vertex = bottom_trap.bottom_vertex
         top_trap.trapezoids_below = bottom_trap.trapezoids_below
@@ -71,10 +68,11 @@ class Trapezoid:
         for trap in bottom_trap.trapezoids_below:
             replace(trap.trapezoids_above, bottom_trap, top_trap)
 
-        bottom_trap.associated_node.replace_by_another_node_in_tree(
-            top_trap.associated_node
-        )
-        bottom_trap.remove_from_edge_registry()
+        for trap in trapezoids_stack[1:]:
+            trap.associated_node.replace_by_another_node_in_tree(
+                top_trap.associated_node
+            )
+            trap.remove_from_edge_registry()
 
     @property
     def associated_node(self) -> Node:

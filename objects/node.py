@@ -207,7 +207,7 @@ class Node:
             bottom_vertex_just_inserted,
         )
 
-        self.merge_trapezoids_if_necessary(created_trap_couples)
+        self.merge_redundant_trapezoids(created_trap_couples)
 
     def manage_adjacents_trap_after_edge_split(
         self,
@@ -371,7 +371,7 @@ class Node:
                     top_left_trap.trapezoids_below = [bottom_left_trap]
                     bottom_left_trap.trapezoids_above = [top_left_trap]
 
-    def merge_trapezoids_if_necessary(
+    def merge_redundant_trapezoids(
         self, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
     ) -> None:
         """
@@ -379,26 +379,21 @@ class Node:
         detect them and merge them.
         """
         for left_or_right in [0, 1]:
-            distance_to_top_neighbor = 1
-            # When we merge top trap the top one is the one we keep, if we keep the bottom we could remove that
-            # another method could be to iterate in reverse order
+            stack_to_merge: list[Trapezoid] = [created_trap_couples[0][left_or_right]]
 
-            for trap_couple_index in range(1, len(created_trap_couples)):
-                top_trap = created_trap_couples[
-                    trap_couple_index - distance_to_top_neighbor
-                ][left_or_right]
-                bottom_trap = created_trap_couples[trap_couple_index][left_or_right]
+            for trap_couple in created_trap_couples[1:]:
+                trap = trap_couple[left_or_right]
 
-                # maybe we can avoid doing the two comparison as we know the the splitting edge is shared
                 if (
-                    top_trap.left_edge == bottom_trap.left_edge
-                    and top_trap.right_edge == bottom_trap.right_edge
+                    stack_to_merge[-1].left_edge != trap.left_edge
+                    or stack_to_merge[-1].right_edge != trap.right_edge
                 ):
-                    Trapezoid.merge(top_trap, bottom_trap)
-                    distance_to_top_neighbor += 1
+                    Trapezoid.merge_trapezoids_stack(stack_to_merge)
+                    stack_to_merge = []
 
-                else:
-                    distance_to_top_neighbor = 1
+                stack_to_merge.append(trap)
+
+            Trapezoid.merge_trapezoids_stack(stack_to_merge)
 
     def get_all_traps(
         self, trapezoids_acc: list[Trapezoid] | None = None
