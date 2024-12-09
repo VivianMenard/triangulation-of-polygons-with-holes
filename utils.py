@@ -3,7 +3,9 @@ from __future__ import annotations
 import platform
 import random
 from tkinter import Tk
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+from constants import Color
 
 if TYPE_CHECKING:
     from objects import Vertex
@@ -25,8 +27,8 @@ def segment_intersect(ptA: Vertex, ptB: Vertex, ptC: Vertex, ptD: Vertex) -> boo
     ) and counter_clockwise(ptC, ptD, ptA) != counter_clockwise(ptC, ptD, ptB)
 
 
-def get_random_pastel_color() -> str:
-    return f"#{random.randint(100, 255):02x}{random.randint(100, 255):02x}{random.randint(100, 255):02x}"
+def get_random_pastel_color() -> Color:
+    return cast(Color, tuple([random.randint(100, 255) for _ in range(3)]))
 
 
 def set_process_dpi() -> None:

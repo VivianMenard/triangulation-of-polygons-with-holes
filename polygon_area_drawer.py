@@ -8,7 +8,7 @@ from algorithms import (
     trapezoidation,
 )
 from objects import Polygon, PolygonArea, Triangle, Vertex
-from utils import get_random_pastel_color, segment_intersect
+from utils import segment_intersect
 
 
 class PolygonAreaDrawer:
@@ -22,7 +22,6 @@ class PolygonAreaDrawer:
     objects_ids_by_polygon: list[list[int]]
     triangles_ids: list[int]
     in_progress: bool
-    triangles_colors: dict[tuple[int, int, int], str]
 
     def __init__(self, root: Tk) -> None:
         self.canvas = Canvas(root, bg="white")
@@ -52,7 +51,6 @@ class PolygonAreaDrawer:
         self.objects_ids_by_polygon = []
         self.triangles_ids = []
         self.in_progress = False
-        self.triangles_colors = {}
 
     def add_point(self, event: Event) -> None:
         new_point = Vertex(event.x, event.y)
@@ -173,18 +171,10 @@ class PolygonAreaDrawer:
 
         return False
 
-    def get_triangle_color(self, triangle: Triangle) -> str:
-        triangle_key: tuple[int, int, int] = triangle.get_hashable_key()
-
-        if triangle_key not in self.triangles_colors:
-            self.triangles_colors[triangle_key] = get_random_pastel_color()
-
-        return self.triangles_colors[triangle_key]
-
     def draw_triangle(self, triangle: Triangle) -> None:
         pt1, pt2, pt3 = triangle.vertices
 
-        color = self.get_triangle_color(triangle)
+        color = triangle.color_str
 
         triangle_id = self.canvas.create_polygon(
             pt1.x, pt1.y, pt2.x, pt2.y, pt3.x, pt3.y, fill=color, outline=color, width=1
