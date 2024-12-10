@@ -12,6 +12,12 @@ class Edge:
         self.end = end
         self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
 
+    def get_vertex(self, top: bool) -> Vertex:
+        if top:
+            return self.top_vertex
+
+        return self.bottom_vertex
+
     def get_x_by_y(self, y: float) -> float:
         start_x = self.start.x
         end_x = self.end.x

@@ -216,95 +216,74 @@ class Node:
         top_vertex_just_inserted: bool,
         bottom_vertex_just_inserted: bool,
     ) -> None:
-        first_trap_left, first_trap_right = created_trap_couples[0]
-        if top_vertex_just_inserted:
-            # only 1 trap above and it needs to be above for both
-            # but already above for right
-            if len(first_trap_right.trapezoids_above) != 1:
-                raise InconsistentTrapezoidNeighborhood
+        def get_edge_vertex(edge: Edge | None, top: bool) -> Vertex | None:
+            if edge is None:
+                return None
 
-            first_trap_left.trapezoids_above = first_trap_right.trapezoids_above.copy()
-            trap_above = first_trap_right.trapezoids_above[0]
-            trap_above.trapezoids_below = [first_trap_left, first_trap_right]
+            return edge.get_vertex(top=top)
 
-        else:
-            if (
-                getattr(first_trap_left.left_edge, "top_vertex", None)
-                == edge.top_vertex
-            ):  # left upward peak with an old edge
-                if len(first_trap_right.trapezoids_above) != 1:
+        # first handle adjacent trapezoids for both ends of the inserted edge
+        for relevant_trap_couple_index, vertex_just_inserted, top in [
+            [0, top_vertex_just_inserted, True],  # top end
+            [-1, bottom_vertex_just_inserted, False],  # bottom end
+        ]:
+            end_trap_left, end_trap_right = created_trap_couples[
+                relevant_trap_couple_index
+            ]
+            exterior_adjacent_traps = end_trap_right.get_adjacent_traps(top=top)
+
+            if vertex_just_inserted:
+                # only 1 exterior adjacent trapezoid and it needs to be adjacent for both
+                # but already adjacent for right
+                if len(exterior_adjacent_traps) != 1:
                     raise InconsistentTrapezoidNeighborhood
 
-                # nothing to do
-
-            elif (
-                getattr(first_trap_right.right_edge, "top_vertex", None)
-                == edge.top_vertex
-            ):  # right upward peak with an old edge
-                if len(first_trap_right.trapezoids_above) != 1:
-                    raise InconsistentTrapezoidNeighborhood
-
-                first_trap_left.trapezoids_above = first_trap_right.trapezoids_above
-                first_trap_right.trapezoids_above = []
-                replace(
-                    first_trap_left.trapezoids_above[0].trapezoids_below,
-                    first_trap_right,
-                    first_trap_left,
+                end_trap_left.set_adjacent_traps(
+                    exterior_adjacent_traps.copy(), top=top
+                )
+                adjacent_trap = exterior_adjacent_traps[0]
+                adjacent_trap.set_adjacent_traps(
+                    [end_trap_left, end_trap_right], top=not top
                 )
 
-            else:  # the new edge just extend an old edge above
-                if len(first_trap_right.trapezoids_above) != 2:
-                    raise InconsistentTrapezoidNeighborhood
+            else:
+                edge_relevant_end = get_edge_vertex(edge, top=top)
+                if (
+                    get_edge_vertex(end_trap_left.left_edge, top=top)
+                    == edge_relevant_end
+                ):  # left peak with an old edge
+                    if len(exterior_adjacent_traps) != 1:
+                        raise InconsistentTrapezoidNeighborhood
 
-                left_above, right_above = first_trap_right.trapezoids_above
-                first_trap_left.trapezoids_above = [left_above]
-                first_trap_right.trapezoids_above = [right_above]
-                replace(left_above.trapezoids_below, first_trap_right, first_trap_left)
+                    # nothing to do
 
-        last_trap_left, last_trap_right = created_trap_couples[-1]
-        if bottom_vertex_just_inserted:
-            # only 1 trap below and it needs to be below for both
-            # but already below for right
-            if len(last_trap_right.trapezoids_below) != 1:
-                raise InconsistentTrapezoidNeighborhood
+                elif (
+                    get_edge_vertex(end_trap_right.right_edge, top=top)
+                    == edge_relevant_end
+                ):  # right peak with an old edge
+                    if len(exterior_adjacent_traps) != 1:
+                        raise InconsistentTrapezoidNeighborhood
 
-            last_trap_left.trapezoids_below = last_trap_right.trapezoids_below.copy()
-            trap_below = last_trap_right.trapezoids_below[0]
-            trap_below.trapezoids_above = [last_trap_left, last_trap_right]
+                    end_trap_left.set_adjacent_traps(exterior_adjacent_traps, top=top)
+                    end_trap_right.set_adjacent_traps([], top=top)
+                    replace(
+                        exterior_adjacent_traps[0].get_adjacent_traps(top=not top),
+                        end_trap_right,
+                        end_trap_left,
+                    )
 
-        else:
-            if (
-                getattr(last_trap_left.left_edge, "bottom_vertex", None)
-                == edge.bottom_vertex
-            ):  # left downward peak with an old edge
-                if len(last_trap_right.trapezoids_below) != 1:
-                    raise InconsistentTrapezoidNeighborhood
+                else:  # the new edge just extend an old edge
+                    if len(exterior_adjacent_traps) != 2:
+                        raise InconsistentTrapezoidNeighborhood
 
-                # nothing to do
-
-            elif (
-                getattr(last_trap_right.right_edge, "bottom_vertex", None)
-                == edge.bottom_vertex
-            ):  # right downward peak with an old edge
-                if len(last_trap_right.trapezoids_below) != 1:
-                    raise InconsistentTrapezoidNeighborhood
-
-                last_trap_left.trapezoids_below = last_trap_right.trapezoids_below
-                last_trap_right.trapezoids_below = []
-                replace(
-                    last_trap_left.trapezoids_below[0].trapezoids_above,
-                    last_trap_right,
-                    last_trap_left,
-                )
-
-            else:  # the new edge just extend an old edge below
-                if len(last_trap_right.trapezoids_below) != 2:
-                    raise InconsistentTrapezoidNeighborhood
-
-                left_below, right_below = last_trap_right.trapezoids_below
-                last_trap_left.trapezoids_below = [left_below]
-                last_trap_right.trapezoids_below = [right_below]
-                replace(left_below.trapezoids_above, last_trap_right, last_trap_left)
+                    left_adjacent, right_adjacent = exterior_adjacent_traps
+                    end_trap_left.set_adjacent_traps([left_adjacent], top=top)
+                    end_trap_right.set_adjacent_traps([right_adjacent], top=top)
+                    replace(
+                        left_adjacent.get_adjacent_traps(top=not top),
+                        end_trap_right,
+                        end_trap_left,
+                    )
 
         for i in range(
             len(created_trap_couples) - 1

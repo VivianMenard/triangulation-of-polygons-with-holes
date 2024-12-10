@@ -97,6 +97,18 @@ class Trapezoid:
 
         self.register_in_edge_registry()
 
+    def get_adjacent_traps(self, top: bool) -> list[Trapezoid]:
+        if top:
+            return self.trapezoids_above
+
+        return self.trapezoids_below
+
+    def set_adjacent_traps(self, new_traps: list[Trapezoid], top: bool) -> None:
+        if top:
+            self.trapezoids_above = new_traps
+        else:
+            self.trapezoids_below = new_traps
+
     def remove_from_edge_registry(self) -> None:
         if self._right_edge is not None:
             Trapezoid.traps_by_right_edge[self._right_edge].remove(self)
