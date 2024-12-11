@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .vertex import Vertex
 
 
@@ -11,6 +13,13 @@ class Edge:
         self.start = start
         self.end = end
         self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
+
+    @classmethod
+    def get_edge_vertex(cls, edge: Edge | None, top: bool) -> Vertex | None:
+        if edge is None:
+            return None
+
+        return edge.get_vertex(top=top)
 
     def get_vertex(self, top: bool) -> Vertex:
         if top:
