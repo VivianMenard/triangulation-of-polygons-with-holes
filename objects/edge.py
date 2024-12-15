@@ -21,6 +21,10 @@ class Edge:
 
         return edge.get_vertex(top=top)
 
+    @property
+    def mid_point(self) -> Vertex:
+        return Vertex((self.start.x + self.end.x) / 2, (self.start.y + self.end.y) / 2)
+
     def get_vertex(self, top: bool) -> Vertex:
         if top:
             return self.top_vertex
@@ -49,6 +53,3 @@ class Edge:
         x_edge = self.get_x_by_y(vertex.y)
 
         return vertex.x > x_edge
-
-    def get_mid_point(self) -> Vertex:
-        return Vertex((self.start.x + self.end.x) / 2, (self.start.y + self.end.y) / 2)

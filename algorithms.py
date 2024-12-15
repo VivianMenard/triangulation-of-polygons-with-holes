@@ -27,20 +27,23 @@ def trapezoidation(polygon_area: PolygonArea) -> Node:
     search_tree = Node(trapezoid=Trapezoid())
     already_inserted: set[Vertex] = set()
 
+    def insert_vertex_if_necessary(vertex: Vertex) -> bool:
+        if vertex not in already_inserted:
+            search_tree.insert_vertex(vertex)
+            already_inserted.add(vertex)
+            return True
+
+        return False
+
     for edge in edges:
         bottom_vertex, top_vertex = edge.get_ordered_vertices()
 
-        if top_should_be_inserted := top_vertex not in already_inserted:
-            search_tree.insert_vertex(top_vertex)
-            already_inserted.add(top_vertex)
+        top_just_inserted = insert_vertex_if_necessary(top_vertex)
+        bottom_just_inserted = insert_vertex_if_necessary(bottom_vertex)
 
-        if bottom_should_be_inserted := bottom_vertex not in already_inserted:
-            search_tree.insert_vertex(bottom_vertex)
-            already_inserted.add(bottom_vertex)
+        start_node = search_tree.search_area_containing_vertex(edge.mid_point)
 
-        start_node = search_tree.search_area_containing_vertex(edge.get_mid_point())
-
-        start_node.insert_edge(edge, top_should_be_inserted, bottom_should_be_inserted)
+        start_node.insert_edge(edge, top_just_inserted, bottom_just_inserted)
 
     return search_tree
 

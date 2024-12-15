@@ -180,8 +180,8 @@ class Node:
     def insert_edge(
         self,
         edge: Edge,
-        top_vertex_just_inserted: bool,
-        bottom_vertex_just_inserted: bool,
+        top_just_inserted: bool,
+        bottom_just_inserted: bool,
     ) -> None:
         self.make_sure_it_is_a_trapezoid()
 
@@ -201,8 +201,8 @@ class Node:
         Node.manage_adjacent_trapezoids_after_edge_split(
             edge,
             created_trap_couples,
-            top_vertex_just_inserted,
-            bottom_vertex_just_inserted,
+            top_just_inserted,
+            bottom_just_inserted,
         )
 
         Node.merge_redundant_trapezoids(created_trap_couples)
@@ -314,14 +314,14 @@ class Node:
     def manage_adjacent_trapezoids_after_edge_split(
         edge: Edge,
         created_trap_couples: list[tuple[Trapezoid, Trapezoid]],
-        top_vertex_just_inserted: bool,
-        bottom_vertex_just_inserted: bool,
+        top_just_inserted: bool,
+        bottom_just_inserted: bool,
     ) -> None:
         Node.manage_adjacent_trapezoid_at_inserted_edge_end(
-            edge, *created_trap_couples[0], top_vertex_just_inserted, top_end=True
+            edge, *created_trap_couples[0], top_just_inserted, top_end=True
         )
         Node.manage_adjacent_trapezoid_at_inserted_edge_end(
-            edge, *created_trap_couples[-1], bottom_vertex_just_inserted, top_end=False
+            edge, *created_trap_couples[-1], bottom_just_inserted, top_end=False
         )
 
         for trap_couple_index in range(
