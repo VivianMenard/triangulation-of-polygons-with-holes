@@ -14,8 +14,8 @@ class Edge:
         self.end = end
         self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
 
-    @classmethod
-    def get_edge_vertex(cls, edge: Edge | None, top: bool) -> Vertex | None:
+    @staticmethod
+    def get_edge_vertex(edge: Edge | None, top: bool) -> Vertex | None:
         if edge is None:
             return None
 

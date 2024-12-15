@@ -54,8 +54,8 @@ class Trapezoid:
         self._associated_node = None
         self.inside = False
 
-    @classmethod
-    def merge_trapezoids_stack(cls, trapezoids_stack: list[Trapezoid]) -> None:
+    @staticmethod
+    def merge_trapezoids_stack(trapezoids_stack: list[Trapezoid]) -> None:
         if len(trapezoids_stack) < 2:
             return
 

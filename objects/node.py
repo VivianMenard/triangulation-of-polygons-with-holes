@@ -150,9 +150,7 @@ class Node:
             )
 
         while not is_the_end_of_edge(current_trap):
-            next_traps_in_direction = getattr(
-                current_trap, "trapezoids_above" if up_direction else "trapezoids_below"
-            )
+            next_traps_in_direction = current_trap.get_adjacent_traps(top=up_direction)
 
             match len(next_traps_in_direction):
                 case 1:
@@ -200,17 +198,17 @@ class Node:
         ):  # iterates on nodes to split from top to bottom
             node_to_split.split_by_edge(edge, created_trap_couples)
 
-        self.manage_adjacent_trapezoids_after_edge_split(
+        Node.manage_adjacent_trapezoids_after_edge_split(
             edge,
             created_trap_couples,
             top_vertex_just_inserted,
             bottom_vertex_just_inserted,
         )
 
-        self.merge_redundant_trapezoids(created_trap_couples)
+        Node.merge_redundant_trapezoids(created_trap_couples)
 
+    @staticmethod
     def manage_adjacent_trapezoids_on_branch(
-        self,
         edge: Edge,
         left_trap_A: Trapezoid,
         right_trap_A: Trapezoid,
@@ -248,8 +246,8 @@ class Node:
         )
         additional_left_trap_A.set_adjacent_traps([left_trap_B], top=not upward_branch)
 
+    @staticmethod
     def manage_adjacent_trapezoid_at_inserted_edge_end(
-        self,
         edge: Edge,
         end_trap_left: Trapezoid,
         end_trap_right: Trapezoid,
@@ -272,56 +270,57 @@ class Node:
                 [end_trap_left, end_trap_right], top=not top_end
             )
 
-        else:
-            edge_relevant_end = Edge.get_edge_vertex(edge, top=top_end)
-            if (
-                Edge.get_edge_vertex(end_trap_left.left_edge, top=top_end)
-                == edge_relevant_end
-            ):  # left peak with an old edge
-                if len(exterior_adjacent_traps) != 1:
-                    raise InconsistentTrapezoidNeighborhood
+            return
 
-                # nothing to do
+        edge_relevant_end = Edge.get_edge_vertex(edge, top=top_end)
+        if (
+            Edge.get_edge_vertex(end_trap_left.left_edge, top=top_end)
+            == edge_relevant_end
+        ):  # left peak with an old edge
+            if len(exterior_adjacent_traps) != 1:
+                raise InconsistentTrapezoidNeighborhood
 
-            elif (
-                Edge.get_edge_vertex(end_trap_right.right_edge, top=top_end)
-                == edge_relevant_end
-            ):  # right peak with an old edge
-                if len(exterior_adjacent_traps) != 1:
-                    raise InconsistentTrapezoidNeighborhood
+            # nothing to do
 
-                end_trap_left.set_adjacent_traps(exterior_adjacent_traps, top=top_end)
-                end_trap_right.set_adjacent_traps([], top=top_end)
-                replace(
-                    exterior_adjacent_traps[0].get_adjacent_traps(top=not top_end),
-                    end_trap_right,
-                    end_trap_left,
-                )
+        elif (
+            Edge.get_edge_vertex(end_trap_right.right_edge, top=top_end)
+            == edge_relevant_end
+        ):  # right peak with an old edge
+            if len(exterior_adjacent_traps) != 1:
+                raise InconsistentTrapezoidNeighborhood
 
-            else:  # the new edge just extend an old edge
-                if len(exterior_adjacent_traps) != 2:
-                    raise InconsistentTrapezoidNeighborhood
+            end_trap_left.set_adjacent_traps(exterior_adjacent_traps, top=top_end)
+            end_trap_right.set_adjacent_traps([], top=top_end)
+            replace(
+                exterior_adjacent_traps[0].get_adjacent_traps(top=not top_end),
+                end_trap_right,
+                end_trap_left,
+            )
 
-                left_adjacent, right_adjacent = exterior_adjacent_traps
-                end_trap_left.set_adjacent_traps([left_adjacent], top=top_end)
-                end_trap_right.set_adjacent_traps([right_adjacent], top=top_end)
-                replace(
-                    left_adjacent.get_adjacent_traps(top=not top_end),
-                    end_trap_right,
-                    end_trap_left,
-                )
+        else:  # the new edge just extend an old edge
+            if len(exterior_adjacent_traps) != 2:
+                raise InconsistentTrapezoidNeighborhood
 
+            left_adjacent, right_adjacent = exterior_adjacent_traps
+            end_trap_left.set_adjacent_traps([left_adjacent], top=top_end)
+            end_trap_right.set_adjacent_traps([right_adjacent], top=top_end)
+            replace(
+                left_adjacent.get_adjacent_traps(top=not top_end),
+                end_trap_right,
+                end_trap_left,
+            )
+
+    @staticmethod
     def manage_adjacent_trapezoids_after_edge_split(
-        self,
         edge: Edge,
         created_trap_couples: list[tuple[Trapezoid, Trapezoid]],
         top_vertex_just_inserted: bool,
         bottom_vertex_just_inserted: bool,
     ) -> None:
-        self.manage_adjacent_trapezoid_at_inserted_edge_end(
+        Node.manage_adjacent_trapezoid_at_inserted_edge_end(
             edge, *created_trap_couples[0], top_vertex_just_inserted, top_end=True
         )
-        self.manage_adjacent_trapezoid_at_inserted_edge_end(
+        Node.manage_adjacent_trapezoid_at_inserted_edge_end(
             edge, *created_trap_couples[-1], bottom_vertex_just_inserted, top_end=False
         )
 
@@ -338,7 +337,7 @@ class Node:
             if (
                 len(top_right_trap.trapezoids_below) == 2
             ):  # downward branch, ie before the insertion the initial top trap had 2 below adjacent traps
-                self.manage_adjacent_trapezoids_on_branch(
+                Node.manage_adjacent_trapezoids_on_branch(
                     edge,
                     bottom_left_trap,
                     bottom_right_trap,
@@ -350,7 +349,7 @@ class Node:
             elif (
                 len(bottom_right_trap.trapezoids_above) == 2
             ):  # upward branch, ie before the edge insertion the initial bottom trap had 2 above adjacent traps
-                self.manage_adjacent_trapezoids_on_branch(
+                Node.manage_adjacent_trapezoids_on_branch(
                     edge,
                     top_left_trap,
                     top_right_trap,
@@ -369,8 +368,9 @@ class Node:
                 top_left_trap.trapezoids_below = [bottom_left_trap]
                 bottom_left_trap.trapezoids_above = [top_left_trap]
 
+    @staticmethod
     def merge_redundant_trapezoids(
-        self, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
+        created_trap_couples: list[tuple[Trapezoid, Trapezoid]],
     ) -> None:
         """
         The insertion of an edge can create stacked trapezoids that share the same left and right edes, these function
