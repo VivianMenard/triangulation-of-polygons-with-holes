@@ -146,3 +146,15 @@ def make_triangles(monotone_mountains: list[MonotoneMountain]) -> list[Triangle]
         triangulate_monotone_mountain(monotone_mountain, triangles)
 
     return triangles
+
+
+def triangulate_polygon_area(polygon_area: PolygonArea) -> list[Triangle]:
+    search_tree = trapezoidation(polygon_area)
+
+    all_trapezoids = search_tree.get_all_traps()
+
+    inside_trapezoids = select_inside_trapezoids(all_trapezoids)
+
+    monotone_mountains = make_monotone_mountains(inside_trapezoids)
+
+    return make_triangles(monotone_mountains)

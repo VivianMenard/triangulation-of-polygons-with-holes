@@ -1,12 +1,7 @@
 import math
 from tkinter import BOTH, LEFT, Button, Canvas, Event, Tk
 
-from algorithms import (
-    make_monotone_mountains,
-    make_triangles,
-    select_inside_trapezoids,
-    trapezoidation,
-)
+from algorithms import triangulate_polygon_area
 from objects import Polygon, PolygonArea, Triangle, Vertex
 from utils import segment_intersect
 
@@ -191,16 +186,7 @@ class PolygonAreaDrawer:
         self.clear_triangulation()
 
         polygon_area = PolygonArea(self.polygons)
-
-        search_tree = trapezoidation(polygon_area)
-
-        all_trapezoids = search_tree.get_all_traps()
-
-        inside_trapezoids = select_inside_trapezoids(all_trapezoids)
-
-        monotone_mountains = make_monotone_mountains(inside_trapezoids)
-
-        triangles = make_triangles(monotone_mountains)
+        triangles = triangulate_polygon_area(polygon_area)
 
         for triangle in triangles:
             self.draw_triangle(triangle)
