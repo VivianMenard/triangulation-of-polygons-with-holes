@@ -25,3 +25,19 @@ class Vertex:
 
     def __gt__(self, other: Vertex) -> bool:
         return self.y > other.y or (self.y == other.y and self.x > other.x)
+
+    @staticmethod
+    def counter_clockwise(pt_a: Vertex, pt_b: Vertex, pt_c: Vertex) -> bool:
+        return (pt_c.y - pt_a.y) * (pt_b.x - pt_a.x) > (pt_b.y - pt_a.y) * (
+            pt_c.x - pt_a.x
+        )
+
+    @staticmethod
+    def segment_intersect(
+        pt_a: Vertex, pt_b: Vertex, pt_c: Vertex, pt_d: Vertex
+    ) -> bool:
+        return Vertex.counter_clockwise(pt_a, pt_b, pt_c) != Vertex.counter_clockwise(
+            pt_a, pt_b, pt_d
+        ) and Vertex.counter_clockwise(pt_c, pt_d, pt_a) != Vertex.counter_clockwise(
+            pt_c, pt_d, pt_b
+        )

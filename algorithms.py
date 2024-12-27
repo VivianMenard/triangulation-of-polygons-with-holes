@@ -14,7 +14,6 @@ from objects import (
     Triangle,
     Vertex,
 )
-from utils import counter_clockwise
 
 if TYPE_CHECKING:
     from objects import PolygonArea
@@ -111,7 +110,7 @@ def triangulate_monotone_mountain(
 
     first_non_base_vertex: MonotoneVertex = mountain.bottom_vertex.above
 
-    convex_order: bool = counter_clockwise(
+    convex_order: bool = Vertex.counter_clockwise(
         mountain.base.top_vertex,
         mountain.base.bottom_vertex,
         first_non_base_vertex.vertex,
@@ -123,7 +122,7 @@ def triangulate_monotone_mountain(
         below = current_vertex.below
         above = current_vertex.above
         is_current_vertex_convex = (
-            counter_clockwise(below.vertex, current_vertex.vertex, above.vertex)
+            Vertex.counter_clockwise(below.vertex, current_vertex.vertex, above.vertex)
             == convex_order
         )
 

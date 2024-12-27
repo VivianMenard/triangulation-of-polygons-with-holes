@@ -3,7 +3,6 @@ from tkinter import BOTH, LEFT, Button, Canvas, Event, Tk
 
 from algorithms import triangulate_polygon_area
 from objects import Polygon, PolygonArea, Triangle, Vertex
-from utils import segment_intersect
 
 
 class PolygonAreaDrawer:
@@ -151,7 +150,7 @@ class PolygonAreaDrawer:
                 ptA = polygon[pt_index]
                 ptB = polygon[(pt_index + 1) % len(polygon)]
 
-                if segment_intersect(ptA, ptB, beg_new_line, new_pt):
+                if Vertex.segment_intersect(ptA, ptB, beg_new_line, new_pt):
                     return True
 
         return False

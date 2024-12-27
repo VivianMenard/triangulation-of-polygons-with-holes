@@ -3,28 +3,15 @@ from __future__ import annotations
 import platform
 import random
 from tkinter import Tk
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from constants import Color
-
-if TYPE_CHECKING:
-    from objects import Vertex
 
 
 def replace(list_to_modify: list, to_replace, replace_by) -> None:
     for index in range(len(list_to_modify)):
         if list_to_modify[index] == to_replace:
             list_to_modify[index] = replace_by
-
-
-def counter_clockwise(ptA: Vertex, ptB: Vertex, ptC: Vertex) -> bool:
-    return (ptC.y - ptA.y) * (ptB.x - ptA.x) > (ptB.y - ptA.y) * (ptC.x - ptA.x)
-
-
-def segment_intersect(ptA: Vertex, ptB: Vertex, ptC: Vertex, ptD: Vertex) -> bool:
-    return counter_clockwise(ptA, ptB, ptC) != counter_clockwise(
-        ptA, ptB, ptD
-    ) and counter_clockwise(ptC, ptD, ptA) != counter_clockwise(ptC, ptD, ptB)
 
 
 def get_random_pastel_color() -> Color:
