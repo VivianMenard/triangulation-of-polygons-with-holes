@@ -121,9 +121,9 @@ class PolygonAreaDrawer:
         )
         self.objects_ids_by_polygon[-1].append(pt_id)
 
-    def draw_line(self, ptA: Vertex, ptB: Vertex) -> None:
+    def draw_line(self, pt_a: Vertex, pt_b: Vertex) -> None:
         line_id = self.canvas.create_line(
-            (ptA.x, ptA.y), (ptB.x, ptB.y), fill=self.line_color
+            (pt_a.x, pt_a.y), (pt_b.x, pt_b.y), fill=self.line_color
         )
         self.objects_ids_by_polygon[-1].append(line_id)
 
@@ -147,10 +147,10 @@ class PolygonAreaDrawer:
             end_offset = 2 if is_last_polygon else 0
 
             for pt_index in range(beg, len(polygon) - end_offset):
-                ptA = polygon[pt_index]
-                ptB = polygon[(pt_index + 1) % len(polygon)]
+                pt_a = polygon[pt_index]
+                pt_b = polygon[(pt_index + 1) % len(polygon)]
 
-                if Vertex.segment_intersect(ptA, ptB, beg_new_line, new_pt):
+                if Vertex.segment_intersect(pt_a, pt_b, beg_new_line, new_pt):
                     return True
 
         return False
