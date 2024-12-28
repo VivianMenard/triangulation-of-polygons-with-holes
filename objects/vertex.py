@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import ClassVar
 
 from constants import Color
@@ -41,3 +42,22 @@ class Vertex:
         ) and Vertex.counter_clockwise(pt_c, pt_d, pt_a) != Vertex.counter_clockwise(
             pt_c, pt_d, pt_b
         )
+
+    @staticmethod
+    def angle(vertex_1: Vertex, vertex_2: Vertex, vertex_3: Vertex) -> float:
+        def vector(pt_from: Vertex, pt_to: Vertex) -> tuple[float, float]:
+            return (pt_to.x - pt_from.x, pt_to.y - pt_from.y)
+
+        def norm(vector: tuple[float, float]) -> float:
+            return math.sqrt(sum([component * component for component in vector]))
+
+        vector_a = vector(pt_from=vertex_2, pt_to=vertex_1)
+        vector_b = vector(pt_from=vertex_2, pt_to=vertex_3)
+
+        dot_product = vector_a[0] * vector_b[0] + vector_a[1] * vector_b[1]
+
+        cos_angle = dot_product / (norm(vector_a) * norm(vector_b))
+
+        cos_angle = max(-1, min(1, cos_angle))
+
+        return math.degrees(math.acos(cos_angle))
