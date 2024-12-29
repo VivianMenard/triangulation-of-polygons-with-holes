@@ -4,15 +4,13 @@ from .vertex import Vertex
 
 
 class Edge:
-    start: Vertex
-    end: Vertex
     bottom_vertex: Vertex
     top_vertex: Vertex
 
     def __init__(self, start: Vertex, end: Vertex) -> None:
-        self.start = start
-        self.end = end
-        self.bottom_vertex, self.top_vertex = self.get_ordered_vertices()
+        self.bottom_vertex, self.top_vertex = (
+            (end, start) if start > end else (start, end)
+        )
 
     @staticmethod
     def get_edge_vertex(edge: Edge | None, top: bool) -> Vertex | None:
@@ -23,7 +21,8 @@ class Edge:
 
     @property
     def mid_point(self) -> Vertex:
-        return Vertex((self.start.x + self.end.x) / 2, (self.start.y + self.end.y) / 2)
+        bottom, top = self.bottom_vertex, self.top_vertex
+        return Vertex((bottom.x + top.x) / 2, (bottom.y + top.y) / 2)
 
     def get_vertex(self, top: bool) -> Vertex:
         if top:
@@ -32,22 +31,16 @@ class Edge:
         return self.bottom_vertex
 
     def get_x_by_y(self, y: float) -> float:
-        start_x = self.start.x
-        end_x = self.end.x
-        start_y = self.start.y
-        end_y = self.end.y
+        bottom_x = self.bottom_vertex.x
+        top_x = self.top_vertex.x
+        bottom_y = self.bottom_vertex.y
+        top_y = self.top_vertex.y
 
-        if start_y == end_y:
-            return (start_x + end_x) / 2
+        if bottom_y == top_y:
+            return (bottom_x + top_x) / 2
 
-        t = (y - start_y) / (end_y - start_y)
-        return start_x + t * (end_x - start_x)
-
-    def get_ordered_vertices(self) -> tuple[Vertex, Vertex]:
-        if self.start > self.end:
-            return self.end, self.start
-
-        return self.start, self.end
+        t = (y - bottom_y) / (top_y - bottom_y)
+        return bottom_x + t * (top_x - bottom_x)
 
     def is_vertex_at_the_right(self, vertex: Vertex) -> bool:
         x_edge = self.get_x_by_y(vertex.y)

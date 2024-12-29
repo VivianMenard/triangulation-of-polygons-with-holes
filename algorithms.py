@@ -36,10 +36,8 @@ def trapezoidation(polygon_area: PolygonArea) -> Node:
         return False
 
     for edge in edges:
-        bottom_vertex, top_vertex = edge.get_ordered_vertices()
-
-        top_just_inserted = insert_vertex_if_necessary(top_vertex)
-        bottom_just_inserted = insert_vertex_if_necessary(bottom_vertex)
+        top_just_inserted = insert_vertex_if_necessary(edge.top_vertex)
+        bottom_just_inserted = insert_vertex_if_necessary(edge.bottom_vertex)
 
         start_node = search_tree.search_area_containing_vertex(edge.mid_point)
 
