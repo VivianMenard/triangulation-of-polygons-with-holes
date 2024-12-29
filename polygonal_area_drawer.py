@@ -1,11 +1,11 @@
 import math
 from tkinter import BOTH, LEFT, Button, Canvas, Event, Tk
 
-from algorithms import triangulate_polygon_area
-from objects import Polygon, PolygonArea, Triangle, Vertex
+from algorithms import triangulate_polygonal_area
+from objects import Polygon, PolygonalArea, Triangle, Vertex
 
 
-class PolygonAreaDrawer:
+class PolygonalAreaDrawer:
     canvas: Canvas
     clear_button: Button
     clear_last_button: Button
@@ -184,8 +184,8 @@ class PolygonAreaDrawer:
     def triangulate(self) -> None:
         self.clear_triangulation()
 
-        polygon_area = PolygonArea(self.polygons)
-        triangles = triangulate_polygon_area(polygon_area)
+        polygonal_area = PolygonalArea(self.polygons)
+        triangles = triangulate_polygonal_area(polygonal_area)
 
         for triangle in triangles:
             self.draw_triangle(triangle)

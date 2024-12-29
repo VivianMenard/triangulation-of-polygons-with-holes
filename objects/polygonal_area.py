@@ -6,7 +6,7 @@ from .vertex import Vertex
 Polygon = list[Vertex]
 
 
-class PolygonArea:
+class PolygonalArea:
     polygons: list[Polygon]
 
     def __init__(self, polygons: list[Polygon]) -> None:

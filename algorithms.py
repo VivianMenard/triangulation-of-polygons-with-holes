@@ -17,11 +17,11 @@ from objects import (
 )
 
 if TYPE_CHECKING:
-    from objects import PolygonArea
+    from objects import PolygonalArea
 
 
-def trapezoidation(polygon_area: PolygonArea) -> Node:
-    edges: list[Edge] = polygon_area.get_edges()
+def trapezoidation(polygonal_area: PolygonalArea) -> Node:
+    edges: list[Edge] = polygonal_area.get_edges()
     shuffle(edges)
 
     search_tree = Node(trapezoid=Trapezoid())
@@ -184,8 +184,8 @@ def make_triangles(monotone_mountains: list[MonotoneMountain]) -> list[Triangle]
     return triangles
 
 
-def triangulate_polygon_area(polygon_area: PolygonArea) -> list[Triangle]:
-    search_tree = trapezoidation(polygon_area)
+def triangulate_polygonal_area(polygonal_area: PolygonalArea) -> list[Triangle]:
+    search_tree = trapezoidation(polygonal_area)
 
     all_trapezoids = search_tree.get_all_traps()
 
