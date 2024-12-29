@@ -52,9 +52,9 @@ def select_inside_trapezoids(all_trapezoids: list[Trapezoid]) -> list[Trapezoid]
     return [trap for trap in all_trapezoids if trap.is_inside]
 
 
-def make_monotone_mountains(
+def group_vertices_by_mountain(
     trapezoids: list[Trapezoid],
-) -> list[MonotoneMountain]:
+) -> dict[Edge, dict[Vertex, Vertex]]:
     above_vertex_by_base_edge: dict[Edge, dict[Vertex, Vertex]] = defaultdict(dict)
 
     for trap in trapezoids:
@@ -75,6 +75,16 @@ def make_monotone_mountains(
             above_vertex_by_base_edge[mountain_base][
                 cast(Vertex, trap.bottom_vertex)
             ] = cast(Vertex, trap.top_vertex)
+
+    return above_vertex_by_base_edge
+
+
+def make_monotone_mountains(
+    trapezoids: list[Trapezoid],
+) -> list[MonotoneMountain]:
+    above_vertex_by_base_edge: dict[Edge, dict[Vertex, Vertex]] = (
+        group_vertices_by_mountain(trapezoids)
+    )
 
     monotone_mountains: list[MonotoneMountain] = []
 
