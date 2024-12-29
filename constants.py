@@ -8,3 +8,6 @@ class NodeType(Enum):
 
 
 Color = tuple[int, int, int]
+
+ANGLE_THRESHOLD = 150
+ANGLE_EPSILON = 0.1

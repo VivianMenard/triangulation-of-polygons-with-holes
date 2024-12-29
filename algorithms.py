@@ -4,6 +4,7 @@ from collections import defaultdict
 from random import shuffle
 from typing import TYPE_CHECKING, cast
 
+from constants import ANGLE_EPSILON, ANGLE_THRESHOLD
 from exceptions import InconsistentTrapezoid
 from objects import (
     Edge,
@@ -103,7 +104,9 @@ def make_monotone_mountains(
 
 
 def triangulate_monotone_mountain(
-    mountain: MonotoneMountain, triangles: list[Triangle]
+    mountain: MonotoneMountain,
+    triangles: list[Triangle],
+    angle_threshold: float = ANGLE_THRESHOLD,
 ) -> None:
     if mountain.is_degenerated:
         return
@@ -120,27 +123,48 @@ def triangulate_monotone_mountain(
 
     current_vertex: MonotoneVertex = first_non_base_vertex
 
+    angle_closer_to_threshold: float = 180
+
     while not current_vertex.is_base_vertex:
         below = cast(MonotoneVertex, current_vertex.below)
         above = cast(MonotoneVertex, current_vertex.above)
-        is_current_vertex_convex = (
+        current_vertex_convex: bool = (
             Vertex.counter_clockwise(below.vertex, current_vertex.vertex, above.vertex)
             == convex_order
         )
 
-        if is_current_vertex_convex:
-            vertices_counter_clockwise = (
-                (below.vertex, current_vertex.vertex, above.vertex)
-                if convex_order
-                else (below.vertex, above.vertex, current_vertex.vertex)
-            )
-            triangles.append(Triangle(vertices_counter_clockwise))
-            below.above = above
-            above.below = below
-            current_vertex = above if below.is_base_vertex else below
-
-        else:
+        if not current_vertex_convex:
             current_vertex = above
+            continue
+
+        angle: float = Vertex.angle(below.vertex, current_vertex.vertex, above.vertex)
+
+        if angle > angle_threshold:
+            current_vertex = above
+
+            if angle < angle_closer_to_threshold:
+                angle_closer_to_threshold = angle
+
+            continue
+
+        vertices_counter_clockwise = (
+            (below.vertex, current_vertex.vertex, above.vertex)
+            if convex_order
+            else (below.vertex, above.vertex, current_vertex.vertex)
+        )
+        triangles.append(Triangle(vertices_counter_clockwise))
+        below.above = above
+        above.below = below
+        current_vertex = above if below.is_base_vertex else below
+
+    # if it's not possible to triangulate the mountain with the current threshold,
+    # we retry the triangulation, adjusting the threshold to the best angle found.
+    if not mountain.is_degenerated:
+        triangulate_monotone_mountain(
+            mountain,
+            triangles,
+            angle_threshold=angle_closer_to_threshold + ANGLE_EPSILON,
+        )
 
 
 def make_triangles(monotone_mountains: list[MonotoneMountain]) -> list[Triangle]:
