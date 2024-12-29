@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 
 class Trapezoid:
-    next_id: ClassVar[int] = 0
     traps_by_right_edge: ClassVar[DefaultDict[Edge, set[Trapezoid]]] = defaultdict(set)
 
     top_vertex: Vertex | None
@@ -42,9 +41,6 @@ class Trapezoid:
         left_edge: Edge | None = None,
         right_edge: Edge | None = None,
     ) -> None:
-        self.id = Trapezoid.next_id
-        Trapezoid.next_id += 1
-
         self.top_vertex = top_vertex
         self.bottom_vertex = bottom_vertex
         self.trapezoids_above = [] if trapezoids_above is None else trapezoids_above
