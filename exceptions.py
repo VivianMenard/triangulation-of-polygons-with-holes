@@ -35,6 +35,15 @@ class NotATrapezoid(Exception):
     pass
 
 
+class NotTheRoot(Exception):
+    """
+    Raised when attempting to call a root-specific method on a node that is not
+    the root of the search structure.
+    """
+
+    pass
+
+
 class InconsistentArguments(Exception):
     """
     Raised when a method is called with arguments that are logically inconsistent

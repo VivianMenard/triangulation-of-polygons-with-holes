@@ -9,6 +9,7 @@ from exceptions import (
     InconsistentTrapezoidNeighborhood,
     NonExistingAttribute,
     NotATrapezoid,
+    NotTheRoot,
 )
 
 from .edge import Edge
@@ -75,6 +76,10 @@ class Node:
         if self.node_type != NodeType.TRAPEZOID:
             raise NotATrapezoid
 
+    def make_sure_it_is_the_root(self) -> None:
+        if len(self.parents):
+            raise NotTheRoot
+
     def replace_by_another_node_in_tree(self, new_node: Node) -> None:
         self.make_sure_it_is_a_trapezoid()
 
@@ -120,6 +125,8 @@ class Node:
         self._right_child = Node(trapezoid=right_trapezoid, parent=self)
 
     def insert_vertex(self, vertex: Vertex) -> None:
+        self.make_sure_it_is_the_root()
+
         area = self.search_area_containing_vertex(vertex)
         area.split_by_vertex(vertex)
 
@@ -182,6 +189,8 @@ class Node:
         top_just_inserted: bool,
         bottom_just_inserted: bool,
     ) -> None:
+        self.make_sure_it_is_the_root()
+
         start_node = self.search_area_containing_vertex(edge.mid_point)
 
         nodes_to_split_down_direction = start_node.find_nodes_to_split_in_direction(
