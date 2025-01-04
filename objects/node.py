@@ -18,14 +18,57 @@ from .vertex import Vertex
 
 
 class Node:
+    """
+    Represents a node in the trapezoidal decomposition search structure.
+
+    This structure is used as a binary tree to locate the trapezoid containing a point,
+    though it is not strictly a tree since a node can have multiple parents (but all nodes
+    are ultimately descended from a single root node).
+
+    The leaves of this structure represent the trapezoids in the 2D space decomposition.
+    Internal nodes represent vertices or edges that divide the space.
+
+    - If the node represents a vertex, its right child represents the region above it,
+    and its left child represents the region below it.
+    - If the node represents an edge, its right child represents the region to the right
+    of the edge, and its left child represents the region to the left of the edge.
+    """
+
     node_type: NodeType
+    """The type of the node, indicating whether it represents a trapezoid, an edge, or a vertex."""
     associated_obj: Trapezoid | Edge | Vertex
+    """The object associated with the node, which can be a Trapezoid, an Edge, or a Vertex."""
     _left_child: Node | None
+    """
+    The left child of the node, if it exists. 
+    - Represents the region below the vertex if the node is a vertex.
+    - Represents the region to the left of the edge if the node is an edge.
+    """
     _right_child: Node | None
+    """
+    The right child of the node, if it exists. 
+    - Represents the region above the vertex if the node is a vertex.
+    - Represents the region to the right of the edge if the node is an edge.
+    """
     parents: list[Node]
+    """
+    The parents of the node. A node may have:
+    - 0 parents if it is the root node of the structure.
+    - 1 parent in a normal case.
+    - More than 1 parent if it results from the merging of multiple nodes.
+    """
 
     def __init__(self, trapezoid: Trapezoid, parent: Node | None = None) -> None:
-        # At the time of its creation a Node is always a leaf, ie a Trapezoid node
+        """
+        Initializes a new Node. A newly created node is always added at the bottom of the structure,
+        and at the time of its creation, it is always a leaf node representing a trapezoid.
+
+        Initially, a node always has a single parent, as multi-parent nodes result only from merging operations.
+
+        Args:
+            trapezoid (Trapezoid): The trapezoid associated with the new node.
+            parent (Node | None): The parent node, if provided.
+        """
         self.node_type = NodeType.TRAPEZOID
         self.associated_obj = trapezoid
         trapezoid.associated_node = self
@@ -33,12 +76,20 @@ class Node:
         self._right_child = None
         self.parents = []
 
-        # at the time of its creation a Node can't have more thant one parent
         if parent:
             self.parents.append(parent)
 
     @property
     def trapezoid(self) -> Trapezoid:
+        """
+        Gets the trapezoid associated with this node.
+
+        Returns:
+            Trapezoid: The trapezoid if the node type is TRAPEZOID.
+
+        Raises:
+            NonExistingAttribute: If the node type is not TRAPEZOID.
+        """
         if self.node_type != NodeType.TRAPEZOID:
             raise NonExistingAttribute
 
@@ -46,6 +97,15 @@ class Node:
 
     @property
     def vertex(self) -> Vertex:
+        """
+        Gets the vertex associated with this node.
+
+        Returns:
+            Vertex: The vertex if the node type is VERTEX.
+
+        Raises:
+            NonExistingAttribute: If the node type is not VERTEX.
+        """
         if self.node_type != NodeType.VERTEX:
             raise NonExistingAttribute
 
@@ -53,6 +113,15 @@ class Node:
 
     @property
     def edge(self) -> Edge:
+        """
+        Gets the edge associated with this node.
+
+        Returns:
+            Edge: The edge if the node type is EDGE.
+
+        Raises:
+            NonExistingAttribute: If the node type is not EDGE.
+        """
         if self.node_type != NodeType.EDGE:
             raise NonExistingAttribute
 
@@ -60,6 +129,15 @@ class Node:
 
     @property
     def left_child(self) -> Node:
+        """
+        Gets the left child of the node.
+
+        Returns:
+            Node: The left child if the node is not a leaf.
+
+        Raises:
+            NonExistingAttribute: If the node is a leaf.
+        """
         if self._left_child is None:
             raise NonExistingAttribute
 
@@ -67,20 +145,56 @@ class Node:
 
     @property
     def right_child(self) -> Node:
+        """
+        Gets the right child of the node.
+
+        Returns:
+            Node: The right child if the node is not a leaf.
+
+        Raises:
+            NonExistingAttribute: If the node is a leaf.
+        """
         if self._right_child is None:
             raise NonExistingAttribute
 
         return self._right_child
 
     def make_sure_it_is_a_trapezoid(self) -> None:
+        """
+        Ensures that the node is a trapezoid node.
+
+        Raises:
+            NotATrapezoid: If the node type is not TRAPEZOID.
+        """
         if self.node_type != NodeType.TRAPEZOID:
             raise NotATrapezoid
 
     def make_sure_it_is_the_root(self) -> None:
+        """
+        Ensures that the node is the root node of the search structure.
+
+        Raises:
+            NotTheRoot: If the node is the the root node.
+        """
         if len(self.parents):
             raise NotTheRoot
 
     def replace_by_another_node_in_tree(self, new_node: Node) -> None:
+        """
+        Redirects all parent pointers that refer to this node (as left_child or right_child) to a new node.
+
+        This function is primarily used during the merging of trapezoids. When multiple trapezoids are merged,
+        only one of their corresponding nodes is kept, and all others are replaced by the retained node.
+
+        Only a trapezoid node can be replaced, and it must be replaced by another trapezoid node.
+
+        Args:
+            new_node (Node): The node that will replace this node.
+
+        Raises:
+            NotATrapezoid: If this node is not a trapezoid node.
+            InconsistentArguments: If the provided new node is not a trapezoid node.
+        """
         self.make_sure_it_is_a_trapezoid()
 
         if new_node.node_type != NodeType.TRAPEZOID:
@@ -99,6 +213,19 @@ class Node:
         new_node.parents.extend(self.parents)
 
     def split_by_vertex(self, vertex: Vertex) -> None:
+        """
+        Splits the trapezoid represented by this node into two trapezoids using a vertex.
+
+        This operation modifies the current node to represent the vertex that splits the trapezoid.
+        Two new child nodes are created: the left child represents the trapezoid below the vertex,
+        and the right child represents the trapezoid above the vertex.
+
+        Args:
+            vertex (Vertex): The vertex used to split the trapezoid.
+
+        Raises:
+            NotATrapezoid: If this node does not represent a trapezoid.
+        """
         self.make_sure_it_is_a_trapezoid()
 
         bottom_trapezoid, top_trapezoid = self.trapezoid.split_by_vertex(vertex)
@@ -112,6 +239,22 @@ class Node:
     def split_by_edge(
         self, edge: Edge, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
     ) -> None:
+        """
+        Splits the trapezoid represented by this node into two trapezoids using an edge.
+
+        This operation modifies the current node to represent the edge that splits the trapezoid.
+        Two new child nodes are created: the left child represents the trapezoid to the left of the edge,
+        and the right child represents the trapezoid to the right of the edge. The newly created trapezoids
+        are also recorded in the provided list of trapezoid pairs for further operations.
+
+        Args:
+            edge (Edge): The edge used to split the trapezoid.
+            created_trap_couples (list[tuple[Trapezoid, Trapezoid]]): A list to which the pair of newly
+                created trapezoids (left and right) will be appended.
+
+        Raises:
+            NotATrapezoid: If this node does not represent a trapezoid.
+        """
         self.make_sure_it_is_a_trapezoid()
 
         left_trapezoid, right_trapezoid = self.trapezoid.split_by_edge(edge)
@@ -125,12 +268,40 @@ class Node:
         self._right_child = Node(trapezoid=right_trapezoid, parent=self)
 
     def insert_vertex(self, vertex: Vertex) -> None:
+        """
+        Inserts a vertex into the trapezoidal decomposition structure.
+
+        This method must be called on the root node of the structure.
+
+        This operation finds the trapezoid that contains the given vertex, then splits that trapezoid
+        into two regions (above and below the vertex) by creating a new vertex node and two child nodes
+        representing the resulting trapezoids.
+
+        Args:
+            vertex (Vertex): The vertex to insert into the trapezoidal decomposition.
+
+        Raises:
+            NotTheRoot: If this node is not the root of the structure.
+        """
         self.make_sure_it_is_the_root()
 
         area = self.search_area_containing_vertex(vertex)
         area.split_by_vertex(vertex)
 
     def search_area_containing_vertex(self, vertex: Vertex) -> Node:
+        """
+        Finds the trapezoid node in the search structure that contains the given vertex.
+
+        This method navigates the trapezoidal decomposition search structure starting from the current
+        node, following the appropriate child nodes based on the type of the current node (vertex or edge)
+        and the position of the vertex relative to the related vertex/edge.
+
+        Args:
+            vertex (Vertex): The vertex for which the containing trapezoid is to be found.
+
+        Returns:
+            Node: The trapezoid node containing the given vertex.
+        """
         if self.node_type == NodeType.TRAPEZOID:
             return self
 
@@ -146,6 +317,33 @@ class Node:
     def find_nodes_to_split_in_direction(
         self, edge: Edge, up_direction: bool
     ) -> list[Node]:
+        """
+        Finds the sequence of nodes to split along a given direction for an edge insertion.
+
+        This method identifies the nodes in the trapezoidal decomposition that need to be split
+        when an edge is being inserted, starting from the current node and moving either upwards
+        or downwards.
+
+        Details:
+            - The method begins with the trapezoid associated with the current node.
+            - It iteratively moves to adjacent trapezoids in the specified direction until the endpoint
+            of the edge is reached.
+            - If two adjacent trapezoids are found in the specified direction, the method determines the
+            correct trapezoid to follow based on the edge's position relative to the rightmost point of the
+            left trapezoid.
+            - For each traversed trapezoid, its associated node is added to the list of nodes to be split.
+
+        Args:
+            edge (Edge): The edge being inserted into the trapezoidal decomposition.
+            up_direction (bool): Direction of traversal. If True, moves upwards in the decomposition;
+                otherwise, moves downwards.
+
+        Returns:
+            list[Node]: A list of nodes that need to be split along the specified direction.
+
+        Raises:
+            InconsistentTrapezoidNeighborhood: If the trapezoid neighborhood configuration is invalid.
+        """
         nodes_to_split: list[Node] = []
         current_trap: Trapezoid = self.trapezoid
 
@@ -189,6 +387,26 @@ class Node:
         top_just_inserted: bool,
         bottom_just_inserted: bool,
     ) -> None:
+        """
+        Inserts an edge into the trapezoidal decomposition structure.
+
+        This method must be called on the root node of the structure.
+
+        Detailled process:
+            - The function starts by locating the trapezoid containing the midpoint of the edge.
+            - It then determines the sequence of nodes to split, both upwards and downwards from the start node.
+            - Each affected node is split by the edge, and the resulting trapezoid pairs are recorded.
+            - The adjacency relationships of the trapezoids are adjusted to reflect the edge insertion.
+            - Any redundant trapezoids resulting from the operation are merged to optimize the decomposition.
+
+        Args:
+            edge (Edge): The edge to be inserted into the trapezoidal decomposition.
+            top_just_inserted (bool): Indicates if the top endpoint of the edge was recently inserted.
+            bottom_just_inserted (bool): Indicates if the bottom endpoint of the edge was recently inserted.
+
+        Raises:
+            NotARootNode: If the current node is not the root of the search structure.
+        """
         self.make_sure_it_is_the_root()
 
         start_node = self.search_area_containing_vertex(edge.mid_point)
@@ -220,6 +438,21 @@ class Node:
     def get_all_traps(
         self, trapezoids_acc: list[Trapezoid] | None = None
     ) -> list[Trapezoid]:
+        """
+        Collects all trapezoids from the subtree rooted at this node.
+
+        This method traverses the search structure starting from the current node and gathers all trapezoids
+        represented by the leaf nodes in the subtree. If the current node is a trapezoid node, it is directly
+        added to the accumulator list. For non-leaf nodes, the method recursively visits the left and right
+        children to gather trapezoids.
+
+        Args:
+            trapezoids_acc (list[Trapezoid] | None, optional): A list to accumulate trapezoids. If None,
+                a new list is created.
+
+        Returns:
+            list[Trapezoid]: A list of all trapezoids found in the subtree.
+        """
         if trapezoids_acc is None:
             trapezoids_acc = []
 
