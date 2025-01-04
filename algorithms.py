@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from objects import PolygonalArea
 
 
-def trapezoidation(polygonal_area: PolygonalArea) -> Node:
+def trapezoidation(polygonal_area: PolygonalArea) -> list[Trapezoid]:
     """
     Divides the 2D space into trapezoids according to the polygonal area.
 
@@ -33,7 +33,7 @@ def trapezoidation(polygonal_area: PolygonalArea) -> Node:
         polygonal_area (PolygonalArea): The polygonal area to use for trapezoid decomposition of the 2D space.
 
     Returns:
-        Node: The root node of the trapezoidal decomposition tree.
+        list[Trapezoid]: All the trapezoids resulting from the decomposition of the 2D space.
     """
     edges: list[Edge] = polygonal_area.get_edges()
     shuffle(edges)
@@ -42,12 +42,12 @@ def trapezoidation(polygonal_area: PolygonalArea) -> Node:
     already_inserted: set[Vertex] = set()
 
     def insert_vertex_if_necessary(vertex: Vertex) -> bool:
-        if vertex not in already_inserted:
-            search_tree.insert_vertex(vertex)
-            already_inserted.add(vertex)
-            return True
+        if vertex in already_inserted:
+            return False
 
-        return False
+        search_tree.insert_vertex(vertex)
+        already_inserted.add(vertex)
+        return True
 
     for edge in edges:
         top_just_inserted = insert_vertex_if_necessary(edge.top_vertex)
@@ -55,7 +55,7 @@ def trapezoidation(polygonal_area: PolygonalArea) -> Node:
 
         search_tree.insert_edge(edge, top_just_inserted, bottom_just_inserted)
 
-    return search_tree
+    return search_tree.get_all_traps()
 
 
 def select_inside_trapezoids(all_trapezoids: list[Trapezoid]) -> list[Trapezoid]:
@@ -275,12 +275,12 @@ def triangulate_polygonal_area(polygonal_area: PolygonalArea) -> list[Triangle]:
     Returns:
         list[Triangle]: A list of triangles resulting from the triangulation of the polygonal area.
     """
-    search_tree = trapezoidation(polygonal_area)
+    trapezoids = trapezoidation(polygonal_area)
 
-    all_trapezoids = search_tree.get_all_traps()
-
-    inside_trapezoids = select_inside_trapezoids(all_trapezoids)
+    inside_trapezoids = select_inside_trapezoids(trapezoids)
 
     monotone_mountains = make_monotone_mountains(inside_trapezoids)
 
-    return make_triangles(monotone_mountains)
+    triangles = make_triangles(monotone_mountains)
+
+    return triangles
