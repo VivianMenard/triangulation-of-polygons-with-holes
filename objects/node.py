@@ -182,18 +182,20 @@ class Node:
         top_just_inserted: bool,
         bottom_just_inserted: bool,
     ) -> None:
-        self.make_sure_it_is_a_trapezoid()
+        start_node = self.search_area_containing_vertex(edge.mid_point)
 
-        nodes_to_split_down_direction = self.find_nodes_to_split_in_direction(
+        nodes_to_split_down_direction = start_node.find_nodes_to_split_in_direction(
             edge, up_direction=False
         )
-        nodes_to_split_up_direction = self.find_nodes_to_split_in_direction(
+        nodes_to_split_up_direction = start_node.find_nodes_to_split_in_direction(
             edge, up_direction=True
         )
 
         created_trap_couples: list[tuple[Trapezoid, Trapezoid]] = []
         for node_to_split in chain(
-            reversed(nodes_to_split_up_direction), [self], nodes_to_split_down_direction
+            reversed(nodes_to_split_up_direction),
+            [start_node],
+            nodes_to_split_down_direction,
         ):  # iterates on nodes to split from top to bottom
             node_to_split.split_by_edge(edge, created_trap_couples)
 
