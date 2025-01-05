@@ -30,7 +30,6 @@ class Trapezoid:
     left_edge: Edge | None
     _right_edge: Edge | None
     _associated_node: Node | None
-    inside: bool
 
     def __init__(
         self,
@@ -49,7 +48,6 @@ class Trapezoid:
         self._right_edge = None
         self.right_edge = right_edge
         self._associated_node = None
-        self.inside = False
 
     @property
     def associated_node(self) -> Node:
