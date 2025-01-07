@@ -19,17 +19,56 @@ if TYPE_CHECKING:
 
 
 class Trapezoid:
+    """
+    Represents a trapezoid in the 2D trapezoidal decomposition.
+
+    A trapezoid is a geometric region defined by its top and bottom vertices,
+    as well as its left and right edges. Any of these vertices or edges can be absent,
+    indicating that the trapezoid extends infinitely in that direction.
+
+    For efficient calculations, a trapezoid keeps track of its neighboring trapezoids
+    (directly above and below) and its corresponding node in the search structure.
+    """
+
     traps_by_right_edge: ClassVar[DefaultDict[Edge, set[Trapezoid]]] = defaultdict(set)
+    """
+    Class-level mapping of right edges to the set of trapezoids using them as a right boundary.
+    This is used to efficiently identify trapezoids inside the polygonal area.
+    """
 
     top_vertex: Vertex | None
+    """
+    The top vertex of the trapezoid. If None, the trapezoid extends infinitely upward.
+    """
     bottom_vertex: Vertex | None
-    # up to 2 trap above, if 2 the first is the one at the left
+    """
+    The bottom vertex of the trapezoid. If None, the trapezoid extends infinitely downward.
+    """
     trapezoids_above: list[Trapezoid]
-    # up to 2 trap below, if 2 the first is the one at the left
+    """
+    A list of up to two trapezoids directly above this trapezoid.
+    If there are two trapezoids, the first is positioned to the left.
+    """
     trapezoids_below: list[Trapezoid]
+    """
+    A list of up to two trapezoids directly below this trapezoid.
+    If there are two trapezoids, the first is positioned to the left.
+    """
     left_edge: Edge | None
+    """
+    The left boundary of the trapezoid. If None, the trapezoid extends infinitely to the left.
+    """
     _right_edge: Edge | None
+    """
+    The right boundary of the trapezoid. If None, the trapezoid extends infinitely to the right.
+
+    This attribute is private. Use the `right_edge` setter to modify it, as the setter ensures
+    that `traps_by_right_edge` is updated accordingly.
+    """
     _associated_node: Node | None
+    """
+    The node in the search structure corresponding to this trapezoid.
+    """
 
     def __init__(
         self,
@@ -40,6 +79,19 @@ class Trapezoid:
         left_edge: Edge | None = None,
         right_edge: Edge | None = None,
     ) -> None:
+        """
+        Initializes a new Trapezoid object.
+
+        A trapezoid is defined by its boundaries (vertices/edges), and its relationships with neighboring trapezoids.
+
+        Args:
+            top_vertex (Vertex | None): The top vertex of the trapezoid. Defaults to None, indicating infinite extension upward.
+            bottom_vertex (Vertex | None): The bottom vertex of the trapezoid. Defaults to None, indicating infinite extension downward.
+            trapezoids_above (list[Trapezoid] | None): The trapezoids directly above this one. Defaults to an empty list if not provided.
+            trapezoids_below (list[Trapezoid] | None): The trapezoids directly below this one. Defaults to an empty list if not provided.
+            left_edge (Edge | None): The left edge of the trapezoid. Defaults to None, indicating infinite extension to the left.
+            right_edge (Edge | None): The right edge of the trapezoid. Defaults to None, indicating infinite extension to the right.
+        """
         self.top_vertex = top_vertex
         self.bottom_vertex = bottom_vertex
         self.trapezoids_above = [] if trapezoids_above is None else trapezoids_above
@@ -51,6 +103,22 @@ class Trapezoid:
 
     @property
     def associated_node(self) -> Node:
+        """
+        Gets or sets the node associated with this trapezoid in the search structure.
+
+        - Getter: Returns the node currently associated with the trapezoid.
+            Raises `NonExistingAttribute` if no node is set.
+        - Setter: Associates a new node with the trapezoid.
+
+        Args (for setter):
+            new_node (Node): The node to associate with the trapezoid.
+
+        Returns (for getter):
+            Node: The associated node .
+
+        Raises:
+            NonExistingAttribute: If no node is currently associated when accessing.
+        """
         if self._associated_node is None:
             raise NonExistingAttribute
 
@@ -62,6 +130,20 @@ class Trapezoid:
 
     @property
     def right_edge(self) -> Edge | None:
+        """
+        Gets or sets the right edge of the trapezoid.
+
+        - Getter: Returns the current right edge of the trapezoid.
+        - Setter: Updates the right edge and ensures the trapezoid is correctly registered in the edge registry.
+
+        Args (for setter):
+            new_right_edge (Edge | None): The new right edge for the trapezoid,
+                or None if the trapezoid extends infinitely to the right.
+
+        Returns (for getter):
+            Edge | None: The current right edge of the trapezoid or None if the trapezoid extends infinitely
+                to the right.
+        """
         return self._right_edge
 
     @right_edge.setter
@@ -73,27 +155,66 @@ class Trapezoid:
         self.register_in_edge_registry()
 
     def get_adjacent_traps(self, top: bool) -> list[Trapezoid]:
+        """
+        Retrieves the trapezoids adjacent to this one in the specified direction.
+
+        Args:
+            top (bool): If True, retrieves trapezoids above this one; if False, retrieves trapezoids below.
+
+        Returns:
+            list[Trapezoid]: A list of up to two adjacent trapezoids in the specified direction.
+        """
         if top:
             return self.trapezoids_above
 
         return self.trapezoids_below
 
     def set_adjacent_traps(self, new_traps: list[Trapezoid], top: bool) -> None:
+        """
+        Updates the trapezoids adjacent to this one in the specified direction.
+
+        Args:
+            new_traps (list[Trapezoid]): The new list of adjacent trapezoids.
+            top (bool): If True, updates trapezoids above; if False, updates trapezoids below.
+        """
         if top:
             self.trapezoids_above = new_traps
         else:
             self.trapezoids_below = new_traps
 
     def remove_from_edge_registry(self) -> None:
+        """
+        Removes this trapezoid from the global registry of trapezoids mapped by their right edge.
+        """
         if self._right_edge is not None:
             Trapezoid.traps_by_right_edge[self._right_edge].remove(self)
 
     def register_in_edge_registry(self) -> None:
+        """
+        Adds this trapezoid to the global registry of trapezoids mapped by their right edge.
+        """
         if self._right_edge is not None:
             Trapezoid.traps_by_right_edge[self._right_edge].add(self)
 
     @cached_property
     def is_inside(self) -> bool:
+        """
+        Determines whether the trapezoid lies inside the polygonal area.
+
+        This method is analogous to the point-in-polygon algorithm: a point is inside a polygon
+        if the number of crossings of the polygon's boundary along a horizontal line to the left of the point is odd.
+        If the trapezoid extends infinitely on either side, it is outside (the polygonal area is finite,
+        so an infinite trapezoid cannot be inside). Otherwise, we can locate a trapezoid to its left using
+        the `traps_by_right_edge` mapping. Since the two trapezoids are separated by an edge, we know by parity
+        that this trapezoid is outside if the other is inside, and vice versa. The "is_inside" property can then
+        be determined recursively.
+
+        Thanks to caching, the calculation of this property across all trapezoids is linear in complexity, as the result
+        for each trapezoid is computed only once.
+
+        Returns:
+            bool: True if the trapezoid is inside the polygonal area, False otherwise.
+        """
         if self.right_edge is None or self.left_edge is None:
             return False
 
@@ -103,6 +224,15 @@ class Trapezoid:
         return not left_trap.is_inside
 
     def duplicate(self) -> Trapezoid:
+        """
+        Creates a duplicate of the current trapezoid with the same vertices and edges.
+
+        The duplicated trapezoid retains the same top and bottom vertices, as well as the same left and right edges.
+        The adjacency information (`trapezoids_above` and `trapezoids_below`) and the associated node are not copied.
+
+        Returns:
+            Trapezoid: A new trapezoid instance with the same boundaries.
+        """
         return Trapezoid(
             top_vertex=self.top_vertex,
             bottom_vertex=self.bottom_vertex,
@@ -111,13 +241,31 @@ class Trapezoid:
         )
 
     def split_by_vertex(self, vertex: Vertex) -> tuple[Trapezoid, Trapezoid]:
+        """
+        Splits the trapezoid horizontally into two trapezoids using a given vertex as the dividing point.
+
+        This operation reuses the current trapezoid as top trapezoid and creates a new bottom trapezoid:
+        - The top trapezoid is updated to have the provided vertex as its bottom vertex, and its `trapezoids_below` list
+        is updated to reference the newly created bottom trapezoid.
+        - The bottom trapezoid is a duplicate of the original trapezoid, with its top vertex set to the provided vertex.
+
+        The adjacency relationships of the bottom trapezoid are defined as follows:
+        - The top trapezoid is its only neighbor above.
+        - It inherits the neighbors below from the original trapezoid, and those neighbors are updated to reference
+        the bottom trapezoid instead of the original trapezoid as above them.
+
+        Args:
+            vertex (Vertex): The vertex used to split the trapezoid.
+
+        Returns:
+            tuple[Trapezoid, Trapezoid]: A tuple containing the bottom trapezoid (newly created) and the top trapezoid (modified original).
+        """
         top_trapezoid = self
         bottom_trapezoid = self.duplicate()
 
         top_trapezoid.bottom_vertex = vertex
         bottom_trapezoid.top_vertex = vertex
 
-        # top_trapezoid = self -> no need to change trapezoids_above
         bottom_trapezoid.trapezoids_above = [top_trapezoid]
         bottom_trapezoid.trapezoids_below = self.trapezoids_below
         for trap in self.trapezoids_below:
@@ -127,6 +275,23 @@ class Trapezoid:
         return (bottom_trapezoid, top_trapezoid)
 
     def split_by_edge(self, edge: Edge) -> tuple[Trapezoid, Trapezoid]:
+        """
+        Splits the trapezoid obliquely into two trapezoids using a given edge as the dividing boundary.
+
+        This operation creates a left trapezoid and reuses the current trapezoid as the right trapezoid:
+        - The left trapezoid is a duplicate of the original trapezoid with its right edge set to the provided edge.
+        - The right trapezoid (the original trapezoid) is updated with its left edge set to the provided edge.
+
+        WARNING: This method does not handle the adjacency relationships. Managing these relationships is a
+        responsibility of the `manage_adjacent_trapezoids_after_edge_split` method, which performs the intricate
+        work of ensuring proper connections between trapezoids.
+
+        Args:
+            edge (Edge): The edge used to divide the trapezoid into two parts.
+
+        Returns:
+            tuple[Trapezoid, Trapezoid]: A tuple containing the left trapezoid (newly created) and the right trapezoid (modified original).
+        """
         right_trapezoid = self
         left_trapezoid = self.duplicate()
 
@@ -136,6 +301,23 @@ class Trapezoid:
         return (left_trapezoid, right_trapezoid)
 
     def get_extreme_point(self, top: bool, right: bool) -> Vertex:
+        """
+        Calculates one of the four extreme points of the trapezoid.
+
+        The trapezoid has four extreme points (if it is degenerated two of these points can be the same):
+        top-left, top-right, bottom-left, and bottom-right. By setting top and right arguments you can pick
+        the one you want.
+
+        Args:
+            top (bool): If True, choose the top extreme points; if False, choose the bottom extreme points.
+            right (bool): If True, choose the right extreme points; if False, choose the left extreme points.
+
+        Raises:
+            NonExistingExtremePoint: If the requested extreme point does not exist.
+
+        Returns:
+            Vertex: The selected extreme point of the trapezoid.
+        """
         relevant_vertex = self.top_vertex if top else self.bottom_vertex
         relevant_edge = self.right_edge if right else self.left_edge
 
