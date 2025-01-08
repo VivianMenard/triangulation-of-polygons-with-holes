@@ -338,7 +338,29 @@ class Trapezoid:
         right_trap_B: Trapezoid,
         upward_branch: bool,
     ) -> None:
-        """branch opened in A and closed in B."""
+        """
+        Adjusts the adjacency relationships of trapezoids on a horizontal border with a "branch."
+
+        What I call a horizontal border with a "branch" here: Before the split, the trapezoid below
+        (or above) the horizontal border had two trapezoids above (or below) it, forming a "branch."
+        Determining the new adjacency relationships requires identifying whether the inserted edge
+        splits the left or right side of the branch.
+
+        Here we consider a branch opened in A and closed in B, which means that before the insertion
+        of the edge, there were two trapezoids on side A of the horizontal border and only one on side B
+        (which was adjacent to both trapezoids on side A).
+
+        Args:
+            edge (Edge): The edge being inserted into the trapezoidal decomposition.
+            left_trap_A (Trapezoid): The left trapezoid at the branch opening.
+            right_trap_A (Trapezoid): The right trapezoid at the branch opening.
+            left_trap_B (Trapezoid): The left trapezoid at the branch closing.
+            right_trap_B (Trapezoid): The right trapezoid at the branch closing.
+            upward_branch (bool): Indicates whether the branch is upward (True) or downward (False).
+
+        Raises:
+            InconsistentTrapezoidNeighborhood: If the neighborhood configuration at the branch is invalid.
+        """
         if (
             len(right_trap_A.get_adjacent_traps(top=not upward_branch)) != 1
         ):  # as two vertices can be at the same height (because lexicographic order)
@@ -376,6 +398,40 @@ class Trapezoid:
         end_just_inserted: bool,
         top_end: bool,
     ) -> None:
+        """
+        Adjusts the adjacency relationships of trapezoids at one endpoint of an inserted edge.
+
+        This method is called during the edge insertion process to update the adjacency relationships
+        of trapezoids at either the top or bottom endpoint of the inserted edge. Depending on whether
+        the endpoint vertex was just inserted or existed previously, the adjustments differ.
+
+        1. Endpoint vertex just inserted: The endpoint is adjacent to exactly one exterior trapezoid.
+        The new left and right trapezoids created at the edge endpoint must both be adjacent to this single
+        exterior trapezoid.
+
+        2. Endpoint vertex pre-existing, This means another edge (referred to as the "old edge") was already
+        connected to the endpoint. Two sub-cases possible:
+        - Peak configuration: The endpoint forms a peak between the new and old edges (i.e., the other endpoints of the edges
+        are both above or both below the current endpoint). In this case, there is only one exterior trapezoid, which will
+        be adjacent to the trapezoid not trapped in the peak. The other trapezoid will have no exterior adjacency.
+        - Non-peak configuration: The endpoint lies between the other endpoints of the old and new edges. In this case,
+        two exterior trapezoids exist (left and right), which will connect to the new trapezoids in a straightforward manner
+        (left-to-left and right-to-right).
+
+        This method is tightly coupled with `manage_adjacent_trapezoids_after_edge_split`, which coordinates
+        the adjustment of adjacency relationships along the entire inserted edge.
+
+        Args:
+            edge (Edge): The edge being inserted into the trapezoidal decomposition.
+            end_trap_left (Trapezoid): The left trapezoid at the endpoint of the inserted edge.
+            end_trap_right (Trapezoid): The right trapezoid at the endpoint of the inserted edge.
+            end_just_inserted (bool): Indicates if the vertex at this endpoint was newly inserted.
+            top_end (bool): Indicates if the endpoint is the top (True) or bottom (False) of the edge.
+
+        Raises:
+            InconsistentTrapezoidNeighborhood: If the neighborhood configuration at the edge endpoint is invalid.
+        """
+
         exterior_adjacent_traps = end_trap_right.get_adjacent_traps(top=top_end)
 
         if end_just_inserted:
@@ -439,6 +495,46 @@ class Trapezoid:
         top_just_inserted: bool,
         bottom_just_inserted: bool,
     ) -> None:
+        """
+        Updates the adjacency relationships of trapezoids after an edge insertion.
+
+        When a new edge is inserted into the trapezoidal decomposition by the `Node.insert_edge` method,
+        each trapezoid traversed by the edge is split into two. By the time this method is called,
+        all trapezoid pairs have been created, but their adjacency relationships are not yet properly set.
+        This method ensures that these relationships are correctly updated.
+
+        At the endpoints of the inserted edge, adjacency relationships depend on whether the relevant vertex
+        was just inserted or already existed in the decomposition. These cases are handled by the
+        `manage_adjacent_trapezoid_at_inserted_edge_end` method.
+
+        For the horizontal borders between newly created trapezoids, there are two possible cases:
+        1. Stack configuration: Before the split, the border was between two trapezoids that formed a stack
+        (the top trapezoid was directly above the bottom one, and vice versa). In this case, the new adjacency
+        relationships are straightforward: the top-left and bottom-left trapezoids form a stack, as do the
+        top-right and bottom-right trapezoids.
+        2. Branch configuration: Before the split, the trapezoid below (or above) the horizontal border
+        had two trapezoids above (or below) it, forming a "branch." Here, determining the new adjacency
+        relationships requires identifying whether the inserted edge splits the left or right side of the branch.
+        This is managed by the `manage_adjacent_trapezoids_on_branch` method.
+
+        Note: - `created_trap_couples` does not contain only newly created trapezoids; in each pair, the original
+        trapezoid is reused as the right trapezoid. Consequently, the right trapezoid in each pair retains
+        information about the adjacency relationships of the trapezoid before the split.
+         - The stack configuration mentioned above can still occur, even though stacked trapezoids are merged
+        after each edge insertion. This is because the merge process is not performed after vertex insertion.
+        Since there are potentially two vertex insertions before an edge insertion, such a configuration can
+        exist between these steps.
+
+        Args:
+            edge (Edge): The edge that was inserted into the trapezoidal decomposition.
+            created_trap_couples (list[tuple[Trapezoid, Trapezoid]]): A list of pairs of trapezoids created
+                during the edge split. Each pair consists of a left trapezoid and a right trapezoid.
+            top_just_inserted (bool): Whether the top vertex of the edge was newly inserted.
+            bottom_just_inserted (bool): Whether the bottom vertex of the edge was newly inserted.
+
+        Raises:
+            InconsistentTrapezoidNeighborhood: If the neighborhood configuration is inconsistent.
+        """
         Trapezoid.manage_adjacent_trapezoid_at_inserted_edge_end(
             edge, *created_trap_couples[0], top_just_inserted, top_end=True
         )
@@ -495,8 +591,19 @@ class Trapezoid:
         created_trap_couples: list[tuple[Trapezoid, Trapezoid]],
     ) -> None:
         """
-        The insertion of an edge can create stacked trapezoids that share the same left and right edes, these function
-        detect them and merge them.
+        Merges redundant stacked trapezoids created during edge insertion.
+
+        When inserting an edge, multiple trapezoids may be created that are vertically stacked
+        and share the same left and right edges. These trapezoids represent redundant divisions
+        and can be merged into a single trapezoid.
+
+        This method iterates over the created trapezoids (both left and right sides of the edge)
+        to detect and merge such stacks. The merging operation is performed using the
+        `merge_trapezoids_stack` method.
+
+        Args:
+            created_trap_couples (list[tuple[Trapezoid, Trapezoid]]): A list of trapezoid pairs
+            (left and right) created during edge insertion. The list must be ordered from top to bottom.
         """
         for left_or_right in [0, 1]:
             stack_to_merge: list[Trapezoid] = [created_trap_couples[0][left_or_right]]
@@ -517,6 +624,28 @@ class Trapezoid:
 
     @staticmethod
     def merge_trapezoids_stack(trapezoids_stack: list[Trapezoid]) -> None:
+        """
+        Merges a vertical stack of trapezoids into a single trapezoid.
+
+        This method combines a stack of trapezoids (sharing the same
+        left and right edges and on top of each other) into a single trapezoid
+        by extending the top trapezoid to include the vertical range of all trapezoids
+        in the stack. This method assumes that `trapezoids_stack` is a stack, no verification
+        are performed.
+
+        During the merge:
+        - The bottom vertex and below-neighbors of the top trapezoid are updated to reflect
+        the bottom of the stack.
+        - The adjacency relationships of the bottom trapezoid's neighbors are updated to point
+        to the top trapezoid.
+        - The nodes associated with the trapezoids in the stack are replaced in the search
+        structure with the node of the top trapezoid.
+        - Redundant trapezoids are removed from the edge registry.
+
+        Args:
+            trapezoids_stack (list[Trapezoid]): A list of vertically stacked trapezoids to be merged.
+            The list must be ordered from top to bottom.
+        """
         if len(trapezoids_stack) < 2:
             return
 
