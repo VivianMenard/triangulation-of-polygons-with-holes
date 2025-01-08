@@ -18,8 +18,8 @@ class Edge:
         Initializes an edge by determining its bottom and top vertices.
 
         Args:
-            start (Vertex): The first vertex of the edge.
-            end (Vertex): The second vertex of the edge.
+            start (Vertex): One vertex of the edge.
+            end (Vertex): The other vertex of the edge.
         """
         self.bottom_vertex, self.top_vertex = (
             (end, start) if start > end else (start, end)
