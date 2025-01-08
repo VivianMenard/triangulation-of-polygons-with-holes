@@ -34,23 +34,23 @@ class Node:
     of the edge, and its left child represents the region to the left of the edge.
     """
 
-    node_type: NodeType
+    __node_type: NodeType
     """The type of the node, indicating whether it represents a trapezoid, an edge, or a vertex."""
-    associated_obj: Trapezoid | Edge | Vertex
+    __associated_obj: Trapezoid | Edge | Vertex
     """The object associated with the node, which can be a Trapezoid, an Edge, or a Vertex."""
-    _left_child: Node | None
+    __left_child: Node | None
     """
     The left child of the node, if it exists. 
     - Represents the region below the vertex if the node is a vertex.
     - Represents the region to the left of the edge if the node is an edge.
     """
-    _right_child: Node | None
+    __right_child: Node | None
     """
     The right child of the node, if it exists. 
     - Represents the region above the vertex if the node is a vertex.
     - Represents the region to the right of the edge if the node is an edge.
     """
-    parents: list[Node]
+    __parents: list[Node]
     """
     The parents of the node. A node may have:
     - 0 parents if it is the root node of the structure.
@@ -69,15 +69,15 @@ class Node:
             trapezoid (Trapezoid): The trapezoid associated with the new node.
             parent (Node | None): The parent node, if provided.
         """
-        self.node_type = NodeType.TRAPEZOID
-        self.associated_obj = trapezoid
+        self.__node_type = NodeType.TRAPEZOID
+        self.__associated_obj = trapezoid
         trapezoid.associated_node = self
-        self._left_child = None
-        self._right_child = None
-        self.parents = []
+        self.__left_child = None
+        self.__right_child = None
+        self.__parents = []
 
         if parent:
-            self.parents.append(parent)
+            self.__parents.append(parent)
 
     @property
     def trapezoid(self) -> Trapezoid:
@@ -90,10 +90,10 @@ class Node:
         Raises:
             NonExistingAttribute: If the node type is not TRAPEZOID.
         """
-        if self.node_type != NodeType.TRAPEZOID:
+        if self.__node_type != NodeType.TRAPEZOID:
             raise NonExistingAttribute
 
-        return cast(Trapezoid, self.associated_obj)
+        return cast(Trapezoid, self.__associated_obj)
 
     @property
     def vertex(self) -> Vertex:
@@ -106,10 +106,10 @@ class Node:
         Raises:
             NonExistingAttribute: If the node type is not VERTEX.
         """
-        if self.node_type != NodeType.VERTEX:
+        if self.__node_type != NodeType.VERTEX:
             raise NonExistingAttribute
 
-        return cast(Vertex, self.associated_obj)
+        return cast(Vertex, self.__associated_obj)
 
     @property
     def edge(self) -> Edge:
@@ -122,10 +122,10 @@ class Node:
         Raises:
             NonExistingAttribute: If the node type is not EDGE.
         """
-        if self.node_type != NodeType.EDGE:
+        if self.__node_type != NodeType.EDGE:
             raise NonExistingAttribute
 
-        return cast(Edge, self.associated_obj)
+        return cast(Edge, self.__associated_obj)
 
     @property
     def left_child(self) -> Node:
@@ -138,10 +138,10 @@ class Node:
         Raises:
             NonExistingAttribute: If the node is a leaf.
         """
-        if self._left_child is None:
+        if self.__left_child is None:
             raise NonExistingAttribute
 
-        return self._left_child
+        return self.__left_child
 
     @property
     def right_child(self) -> Node:
@@ -154,29 +154,29 @@ class Node:
         Raises:
             NonExistingAttribute: If the node is a leaf.
         """
-        if self._right_child is None:
+        if self.__right_child is None:
             raise NonExistingAttribute
 
-        return self._right_child
+        return self.__right_child
 
-    def make_sure_it_is_a_trapezoid(self) -> None:
+    def __make_sure_it_is_a_trapezoid(self) -> None:
         """
         Ensures that the node is a trapezoid node.
 
         Raises:
             NotATrapezoid: If the node type is not TRAPEZOID.
         """
-        if self.node_type != NodeType.TRAPEZOID:
+        if self.__node_type != NodeType.TRAPEZOID:
             raise NotATrapezoid
 
-    def make_sure_it_is_the_root(self) -> None:
+    def __make_sure_it_is_the_root(self) -> None:
         """
         Ensures that the node is the root node of the search structure.
 
         Raises:
             NotTheRoot: If the node is the the root node.
         """
-        if len(self.parents):
+        if len(self.__parents):
             raise NotTheRoot
 
     def replace_by_another_node_in_tree(self, new_node: Node) -> None:
@@ -195,24 +195,24 @@ class Node:
             NotATrapezoid: If this node is not a trapezoid node.
             InconsistentArguments: If the provided new node is not a trapezoid node.
         """
-        self.make_sure_it_is_a_trapezoid()
+        self.__make_sure_it_is_a_trapezoid()
 
-        if new_node.node_type != NodeType.TRAPEZOID:
+        if new_node.__node_type != NodeType.TRAPEZOID:
             raise InconsistentArguments
 
         if new_node == self:
             return
 
-        for parent in self.parents:
-            if parent._left_child == self:
-                parent._left_child = new_node
+        for parent in self.__parents:
+            if parent.__left_child == self:
+                parent.__left_child = new_node
 
-            elif parent._right_child == self:
-                parent._right_child = new_node
+            elif parent.__right_child == self:
+                parent.__right_child = new_node
 
-        new_node.parents.extend(self.parents)
+        new_node.__parents.extend(self.__parents)
 
-    def split_by_vertex(self, vertex: Vertex) -> None:
+    def __split_by_vertex(self, vertex: Vertex) -> None:
         """
         Splits the trapezoid represented by this node into two trapezoids using a vertex.
 
@@ -226,17 +226,17 @@ class Node:
         Raises:
             NotATrapezoid: If this node does not represent a trapezoid.
         """
-        self.make_sure_it_is_a_trapezoid()
+        self.__make_sure_it_is_a_trapezoid()
 
         bottom_trapezoid, top_trapezoid = self.trapezoid.split_by_vertex(vertex)
 
-        self.node_type = NodeType.VERTEX
-        self.associated_obj = vertex
+        self.__node_type = NodeType.VERTEX
+        self.__associated_obj = vertex
 
-        self._left_child = Node(trapezoid=bottom_trapezoid, parent=self)
-        self._right_child = Node(trapezoid=top_trapezoid, parent=self)
+        self.__left_child = Node(trapezoid=bottom_trapezoid, parent=self)
+        self.__right_child = Node(trapezoid=top_trapezoid, parent=self)
 
-    def split_by_edge(
+    def __split_by_edge(
         self, edge: Edge, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
     ) -> None:
         """
@@ -255,17 +255,17 @@ class Node:
         Raises:
             NotATrapezoid: If this node does not represent a trapezoid.
         """
-        self.make_sure_it_is_a_trapezoid()
+        self.__make_sure_it_is_a_trapezoid()
 
         left_trapezoid, right_trapezoid = self.trapezoid.split_by_edge(edge)
 
         created_trap_couples.append((left_trapezoid, right_trapezoid))
 
-        self.node_type = NodeType.EDGE
-        self.associated_obj = edge
+        self.__node_type = NodeType.EDGE
+        self.__associated_obj = edge
 
-        self._left_child = Node(trapezoid=left_trapezoid, parent=self)
-        self._right_child = Node(trapezoid=right_trapezoid, parent=self)
+        self.__left_child = Node(trapezoid=left_trapezoid, parent=self)
+        self.__right_child = Node(trapezoid=right_trapezoid, parent=self)
 
     def insert_vertex(self, vertex: Vertex) -> None:
         """
@@ -283,12 +283,12 @@ class Node:
         Raises:
             NotTheRoot: If this node is not the root of the structure.
         """
-        self.make_sure_it_is_the_root()
+        self.__make_sure_it_is_the_root()
 
-        area = self.search_area_containing_vertex(vertex)
-        area.split_by_vertex(vertex)
+        area = self.__search_area_containing_vertex(vertex)
+        area.__split_by_vertex(vertex)
 
-    def search_area_containing_vertex(self, vertex: Vertex) -> Node:
+    def __search_area_containing_vertex(self, vertex: Vertex) -> Node:
         """
         Finds the trapezoid node in the search structure that contains the given vertex.
 
@@ -302,19 +302,20 @@ class Node:
         Returns:
             Node: The trapezoid node containing the given vertex.
         """
-        if self.node_type == NodeType.TRAPEZOID:
+        if self.__node_type == NodeType.TRAPEZOID:
             return self
 
         relevant_child: Node = self.left_child
 
-        if (self.node_type == NodeType.VERTEX and vertex > self.vertex) or (
-            self.node_type == NodeType.EDGE and self.edge.is_vertex_at_the_right(vertex)
+        if (self.__node_type == NodeType.VERTEX and vertex > self.vertex) or (
+            self.__node_type == NodeType.EDGE
+            and self.edge.is_vertex_at_the_right(vertex)
         ):
             relevant_child = self.right_child
 
-        return relevant_child.search_area_containing_vertex(vertex)
+        return relevant_child.__search_area_containing_vertex(vertex)
 
-    def find_nodes_to_split_in_direction(
+    def __find_nodes_to_split_in_direction(
         self, edge: Edge, up_direction: bool
     ) -> list[Node]:
         """
@@ -407,14 +408,14 @@ class Node:
         Raises:
             NotARootNode: If the current node is not the root of the search structure.
         """
-        self.make_sure_it_is_the_root()
+        self.__make_sure_it_is_the_root()
 
-        start_node = self.search_area_containing_vertex(edge.mid_point)
+        start_node = self.__search_area_containing_vertex(edge.mid_point)
 
-        nodes_to_split_down_direction = start_node.find_nodes_to_split_in_direction(
+        nodes_to_split_down_direction = start_node.__find_nodes_to_split_in_direction(
             edge, up_direction=False
         )
-        nodes_to_split_up_direction = start_node.find_nodes_to_split_in_direction(
+        nodes_to_split_up_direction = start_node.__find_nodes_to_split_in_direction(
             edge, up_direction=True
         )
 
@@ -424,7 +425,7 @@ class Node:
             [start_node],
             nodes_to_split_down_direction,
         ):  # iterates on nodes to split from top to bottom
-            node_to_split.split_by_edge(edge, created_trap_couples)
+            node_to_split.__split_by_edge(edge, created_trap_couples)
 
         Trapezoid.manage_adjacent_trapezoids_after_edge_split(
             edge,
@@ -456,7 +457,7 @@ class Node:
         if trapezoids_acc is None:
             trapezoids_acc = []
 
-        if self.node_type == NodeType.TRAPEZOID:
+        if self.__node_type == NodeType.TRAPEZOID:
             trapezoids_acc.append(self.trapezoid)
 
         else:
