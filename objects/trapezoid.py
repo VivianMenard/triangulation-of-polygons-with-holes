@@ -58,14 +58,14 @@ class Trapezoid:
     """
     The left boundary of the trapezoid. If None, the trapezoid extends infinitely to the left.
     """
-    _right_edge: Edge | None
+    __right_edge: Edge | None
     """
     The right boundary of the trapezoid. If None, the trapezoid extends infinitely to the right.
 
     This attribute is private. Use the `right_edge` setter to modify it, as the setter ensures
     that `traps_by_right_edge` is updated accordingly.
     """
-    _associated_node: Node | None
+    __associated_node: Node | None
     """
     The node in the search structure corresponding to this trapezoid.
     """
@@ -97,9 +97,9 @@ class Trapezoid:
         self.trapezoids_above = [] if trapezoids_above is None else trapezoids_above
         self.trapezoids_below = [] if trapezoids_below is None else trapezoids_below
         self.left_edge = left_edge
-        self._right_edge = None
+        self.__right_edge = None
         self.right_edge = right_edge
-        self._associated_node = None
+        self.__associated_node = None
 
     @property
     def associated_node(self) -> Node:
@@ -119,14 +119,14 @@ class Trapezoid:
         Raises:
             NonExistingAttribute: If no node is currently associated when accessing.
         """
-        if self._associated_node is None:
+        if self.__associated_node is None:
             raise NonExistingAttribute
 
-        return self._associated_node
+        return self.__associated_node
 
     @associated_node.setter
     def associated_node(self, new_node: Node) -> None:
-        self._associated_node = new_node
+        self.__associated_node = new_node
 
     @property
     def right_edge(self) -> Edge | None:
@@ -144,15 +144,15 @@ class Trapezoid:
             Edge | None: The current right edge of the trapezoid or None if the trapezoid extends infinitely
                 to the right.
         """
-        return self._right_edge
+        return self.__right_edge
 
     @right_edge.setter
     def right_edge(self, new_right_edge: Edge | None) -> None:
         self.remove_from_edge_registry()
 
-        self._right_edge = new_right_edge
+        self.__right_edge = new_right_edge
 
-        self.register_in_edge_registry()
+        self.__register_in_edge_registry()
 
     def get_adjacent_traps(self, top: bool) -> list[Trapezoid]:
         """
@@ -186,15 +186,15 @@ class Trapezoid:
         """
         Removes this trapezoid from the global registry of trapezoids mapped by their right edge.
         """
-        if self._right_edge is not None:
-            Trapezoid.traps_by_right_edge[self._right_edge].remove(self)
+        if self.__right_edge is not None:
+            Trapezoid.traps_by_right_edge[self.__right_edge].remove(self)
 
-    def register_in_edge_registry(self) -> None:
+    def __register_in_edge_registry(self) -> None:
         """
         Adds this trapezoid to the global registry of trapezoids mapped by their right edge.
         """
-        if self._right_edge is not None:
-            Trapezoid.traps_by_right_edge[self._right_edge].add(self)
+        if self.__right_edge is not None:
+            Trapezoid.traps_by_right_edge[self.__right_edge].add(self)
 
     @cached_property
     def is_inside(self) -> bool:
@@ -223,7 +223,7 @@ class Trapezoid:
 
         return not left_trap.is_inside
 
-    def duplicate(self) -> Trapezoid:
+    def __duplicate(self) -> Trapezoid:
         """
         Creates a duplicate of the current trapezoid with the same vertices and edges.
 
@@ -261,7 +261,7 @@ class Trapezoid:
             tuple[Trapezoid, Trapezoid]: A tuple containing the bottom trapezoid (newly created) and the top trapezoid (modified original).
         """
         top_trapezoid = self
-        bottom_trapezoid = self.duplicate()
+        bottom_trapezoid = self.__duplicate()
 
         top_trapezoid.bottom_vertex = vertex
         bottom_trapezoid.top_vertex = vertex
@@ -293,7 +293,7 @@ class Trapezoid:
             tuple[Trapezoid, Trapezoid]: A tuple containing the left trapezoid (newly created) and the right trapezoid (modified original).
         """
         right_trapezoid = self
-        left_trapezoid = self.duplicate()
+        left_trapezoid = self.__duplicate()
 
         left_trapezoid.right_edge = edge
         right_trapezoid.left_edge = edge

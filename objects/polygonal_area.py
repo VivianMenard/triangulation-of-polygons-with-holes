@@ -26,7 +26,7 @@ class PolygonalArea:
             must not intersect with any other polygon in the list.
     """
 
-    polygons: list[Polygon]
+    __polygons: list[Polygon]
     """
     A list of polygons defining the polygonal area. Each polygon must not intersect with any other 
     polygon in the list.
@@ -40,7 +40,7 @@ class PolygonalArea:
             polygons (list[Polygon]): A list of polygons, where each polygon is represented
                 as an ordered list of vertices.
         """
-        self.polygons = polygons
+        self.__polygons = polygons
 
     def get_edges(self) -> list[Edge]:
         """
@@ -53,6 +53,6 @@ class PolygonalArea:
         """
         return [
             Edge(polygon[vertex_index], polygon[(vertex_index + 1) % len(polygon)])
-            for polygon in self.polygons
+            for polygon in self.__polygons
             for vertex_index in range(len(polygon))
         ]
