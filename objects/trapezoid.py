@@ -154,6 +154,33 @@ class Trapezoid:
 
         self.__register_in_edge_registry()
 
+    @cached_property
+    def is_inside(self) -> bool:
+        """
+        Determines whether the trapezoid lies inside the polygonal area.
+
+        This method is analogous to the point-in-polygon algorithm: a point is inside a polygon
+        if the number of crossings of the polygon's boundary along a horizontal line to the left of the point is odd.
+        If the trapezoid extends infinitely on either side, it is outside (the polygonal area is finite,
+        so an infinite trapezoid cannot be inside). Otherwise, we can locate a trapezoid to its left using
+        the `traps_by_right_edge` mapping. Since the two trapezoids are separated by an edge, we know by parity
+        that this trapezoid is outside if the other is inside, and vice versa. The "is_inside" property can then
+        be determined recursively.
+
+        Thanks to caching, the calculation of this property across all trapezoids is linear in complexity, as the result
+        for each trapezoid is computed only once.
+
+        Returns:
+            bool: True if the trapezoid is inside the polygonal area, False otherwise.
+        """
+        if self.right_edge is None or self.left_edge is None:
+            return False
+
+        left_traps = Trapezoid.traps_by_right_edge[self.left_edge]
+        left_trap = next(iter(left_traps))
+
+        return not left_trap.is_inside
+
     def get_adjacent_traps(self, top: bool) -> list[Trapezoid]:
         """
         Retrieves the trapezoids adjacent to this one in the specified direction.
@@ -188,57 +215,6 @@ class Trapezoid:
         """
         if self.__right_edge is not None:
             Trapezoid.traps_by_right_edge[self.__right_edge].remove(self)
-
-    def __register_in_edge_registry(self) -> None:
-        """
-        Adds this trapezoid to the global registry of trapezoids mapped by their right edge.
-        """
-        if self.__right_edge is not None:
-            Trapezoid.traps_by_right_edge[self.__right_edge].add(self)
-
-    @cached_property
-    def is_inside(self) -> bool:
-        """
-        Determines whether the trapezoid lies inside the polygonal area.
-
-        This method is analogous to the point-in-polygon algorithm: a point is inside a polygon
-        if the number of crossings of the polygon's boundary along a horizontal line to the left of the point is odd.
-        If the trapezoid extends infinitely on either side, it is outside (the polygonal area is finite,
-        so an infinite trapezoid cannot be inside). Otherwise, we can locate a trapezoid to its left using
-        the `traps_by_right_edge` mapping. Since the two trapezoids are separated by an edge, we know by parity
-        that this trapezoid is outside if the other is inside, and vice versa. The "is_inside" property can then
-        be determined recursively.
-
-        Thanks to caching, the calculation of this property across all trapezoids is linear in complexity, as the result
-        for each trapezoid is computed only once.
-
-        Returns:
-            bool: True if the trapezoid is inside the polygonal area, False otherwise.
-        """
-        if self.right_edge is None or self.left_edge is None:
-            return False
-
-        left_traps = Trapezoid.traps_by_right_edge[self.left_edge]
-        left_trap = next(iter(left_traps))
-
-        return not left_trap.is_inside
-
-    def __duplicate(self) -> Trapezoid:
-        """
-        Creates a duplicate of the current trapezoid with the same vertices and edges.
-
-        The duplicated trapezoid retains the same top and bottom vertices, as well as the same left and right edges.
-        The adjacency information (`trapezoids_above` and `trapezoids_below`) and the associated node are not copied.
-
-        Returns:
-            Trapezoid: A new trapezoid instance with the same boundaries.
-        """
-        return Trapezoid(
-            top_vertex=self.top_vertex,
-            bottom_vertex=self.bottom_vertex,
-            left_edge=self.left_edge,
-            right_edge=self.right_edge,
-        )
 
     def split_by_vertex(self, vertex: Vertex) -> tuple[Trapezoid, Trapezoid]:
         """
@@ -329,164 +305,29 @@ class Trapezoid:
 
         return Vertex(extreme_x, extreme_y)
 
-    @staticmethod
-    def manage_adjacent_trapezoids_on_branch(
-        edge: Edge,
-        left_trap_A: Trapezoid,
-        right_trap_A: Trapezoid,
-        left_trap_B: Trapezoid,
-        right_trap_B: Trapezoid,
-        upward_branch: bool,
-    ) -> None:
+    def __register_in_edge_registry(self) -> None:
         """
-        Adjusts the adjacency relationships of trapezoids on a horizontal border with a "branch."
-
-        What I call a horizontal border with a "branch" here: Before the split, the trapezoid below
-        (or above) the horizontal border had two trapezoids above (or below) it, forming a "branch."
-        Determining the new adjacency relationships requires identifying whether the inserted edge
-        splits the left or right side of the branch.
-
-        Here we consider a branch opened in A and closed in B, which means that before the insertion
-        of the edge, there were two trapezoids on side A of the horizontal border and only one on side B
-        (which was adjacent to both trapezoids on side A).
-
-        Args:
-            edge (Edge): The edge being inserted into the trapezoidal decomposition.
-            left_trap_A (Trapezoid): The left trapezoid at the branch opening.
-            right_trap_A (Trapezoid): The right trapezoid at the branch opening.
-            left_trap_B (Trapezoid): The left trapezoid at the branch closing.
-            right_trap_B (Trapezoid): The right trapezoid at the branch closing.
-            upward_branch (bool): Indicates whether the branch is upward (True) or downward (False).
-
-        Raises:
-            InconsistentTrapezoidNeighborhood: If the neighborhood configuration at the branch is invalid.
+        Adds this trapezoid to the global registry of trapezoids mapped by their right edge.
         """
-        if (
-            len(right_trap_A.get_adjacent_traps(top=not upward_branch)) != 1
-        ):  # as two vertices can be at the same height (because lexicographic order)
-            raise InconsistentTrapezoidNeighborhood
+        if self.__right_edge is not None:
+            Trapezoid.traps_by_right_edge[self.__right_edge].add(self)
 
-        left_trap_A.set_adjacent_traps([left_trap_B], top=not upward_branch)
+    def __duplicate(self) -> Trapezoid:
+        """
+        Creates a duplicate of the current trapezoid with the same vertices and edges.
 
-        branch_point = right_trap_B.get_adjacent_traps(top=upward_branch)[
-            0
-        ].get_extreme_point(top=not upward_branch, right=True)
+        The duplicated trapezoid retains the same top and bottom vertices, as well as the same left and right edges.
+        The adjacency information (`trapezoids_above` and `trapezoids_below`) and the associated node are not copied.
 
-        if edge.is_vertex_at_the_right(branch_point):
-            left_trap_B.set_adjacent_traps([left_trap_A], top=upward_branch)
-            return
-
-        additional_left_trap_A = right_trap_B.get_adjacent_traps(top=upward_branch)[0]
-
-        right_trap_A.set_adjacent_traps([right_trap_B], top=not upward_branch)
-        right_trap_B.set_adjacent_traps([right_trap_A], top=upward_branch)
-
-        left_trap_B.set_adjacent_traps(
-            [
-                additional_left_trap_A,
-                left_trap_A,
-            ],
-            top=upward_branch,
+        Returns:
+            Trapezoid: A new trapezoid instance with the same boundaries.
+        """
+        return Trapezoid(
+            top_vertex=self.top_vertex,
+            bottom_vertex=self.bottom_vertex,
+            left_edge=self.left_edge,
+            right_edge=self.right_edge,
         )
-        additional_left_trap_A.set_adjacent_traps([left_trap_B], top=not upward_branch)
-
-    @staticmethod
-    def manage_adjacent_trapezoid_at_inserted_edge_end(
-        edge: Edge,
-        end_trap_left: Trapezoid,
-        end_trap_right: Trapezoid,
-        end_just_inserted: bool,
-        top_end: bool,
-    ) -> None:
-        """
-        Adjusts the adjacency relationships of trapezoids at one endpoint of an inserted edge.
-
-        This method is called during the edge insertion process to update the adjacency relationships
-        of trapezoids at either the top or bottom endpoint of the inserted edge. Depending on whether
-        the endpoint vertex was just inserted or existed previously, the adjustments differ.
-
-        1. Endpoint vertex just inserted: The endpoint is adjacent to exactly one exterior trapezoid.
-        The new left and right trapezoids created at the edge endpoint must both be adjacent to this single
-        exterior trapezoid.
-
-        2. Endpoint vertex pre-existing, This means another edge (referred to as the "old edge") was already
-        connected to the endpoint. Two sub-cases possible:
-        - Peak configuration: The endpoint forms a peak between the new and old edges (i.e., the other endpoints of the edges
-        are both above or both below the current endpoint). In this case, there is only one exterior trapezoid, which will
-        be adjacent to the trapezoid not trapped in the peak. The other trapezoid will have no exterior adjacency.
-        - Non-peak configuration: The endpoint lies between the other endpoints of the old and new edges. In this case,
-        two exterior trapezoids exist (left and right), which will connect to the new trapezoids in a straightforward manner
-        (left-to-left and right-to-right).
-
-        This method is tightly coupled with `manage_adjacent_trapezoids_after_edge_split`, which coordinates
-        the adjustment of adjacency relationships along the entire inserted edge.
-
-        Args:
-            edge (Edge): The edge being inserted into the trapezoidal decomposition.
-            end_trap_left (Trapezoid): The left trapezoid at the endpoint of the inserted edge.
-            end_trap_right (Trapezoid): The right trapezoid at the endpoint of the inserted edge.
-            end_just_inserted (bool): Indicates if the vertex at this endpoint was newly inserted.
-            top_end (bool): Indicates if the endpoint is the top (True) or bottom (False) of the edge.
-
-        Raises:
-            InconsistentTrapezoidNeighborhood: If the neighborhood configuration at the edge endpoint is invalid.
-        """
-
-        exterior_adjacent_traps = end_trap_right.get_adjacent_traps(top=top_end)
-
-        if end_just_inserted:
-            # only 1 exterior adjacent trapezoid and it needs to be adjacent for both
-            # but already adjacent for right
-            if len(exterior_adjacent_traps) != 1:
-                raise InconsistentTrapezoidNeighborhood
-
-            end_trap_left.set_adjacent_traps(
-                exterior_adjacent_traps.copy(), top=top_end
-            )
-            adjacent_trap = exterior_adjacent_traps[0]
-            adjacent_trap.set_adjacent_traps(
-                [end_trap_left, end_trap_right], top=not top_end
-            )
-
-            return
-
-        edge_relevant_end = Edge.get_edge_vertex(edge, top=top_end)
-        if (
-            Edge.get_edge_vertex(end_trap_left.left_edge, top=top_end)
-            == edge_relevant_end
-        ):  # left peak with an old edge
-            if len(exterior_adjacent_traps) != 1:
-                raise InconsistentTrapezoidNeighborhood
-
-            # nothing to do
-
-        elif (
-            Edge.get_edge_vertex(end_trap_right.right_edge, top=top_end)
-            == edge_relevant_end
-        ):  # right peak with an old edge
-            if len(exterior_adjacent_traps) != 1:
-                raise InconsistentTrapezoidNeighborhood
-
-            end_trap_left.set_adjacent_traps(exterior_adjacent_traps, top=top_end)
-            end_trap_right.set_adjacent_traps([], top=top_end)
-            replace(
-                exterior_adjacent_traps[0].get_adjacent_traps(top=not top_end),
-                end_trap_right,
-                end_trap_left,
-            )
-
-        else:  # the new edge just extend an old edge
-            if len(exterior_adjacent_traps) != 2:
-                raise InconsistentTrapezoidNeighborhood
-
-            left_adjacent, right_adjacent = exterior_adjacent_traps
-            end_trap_left.set_adjacent_traps([left_adjacent], top=top_end)
-            end_trap_right.set_adjacent_traps([right_adjacent], top=top_end)
-            replace(
-                left_adjacent.get_adjacent_traps(top=not top_end),
-                end_trap_right,
-                end_trap_left,
-            )
 
     @staticmethod
     def manage_adjacent_trapezoids_after_edge_split(
@@ -621,6 +462,165 @@ class Trapezoid:
                 stack_to_merge.append(trap)
 
             Trapezoid.merge_trapezoids_stack(stack_to_merge)
+
+    @staticmethod
+    def manage_adjacent_trapezoid_at_inserted_edge_end(
+        edge: Edge,
+        end_trap_left: Trapezoid,
+        end_trap_right: Trapezoid,
+        end_just_inserted: bool,
+        top_end: bool,
+    ) -> None:
+        """
+        Adjusts the adjacency relationships of trapezoids at one endpoint of an inserted edge.
+
+        This method is called during the edge insertion process to update the adjacency relationships
+        of trapezoids at either the top or bottom endpoint of the inserted edge. Depending on whether
+        the endpoint vertex was just inserted or existed previously, the adjustments differ.
+
+        1. Endpoint vertex just inserted: The endpoint is adjacent to exactly one exterior trapezoid.
+        The new left and right trapezoids created at the edge endpoint must both be adjacent to this single
+        exterior trapezoid.
+
+        2. Endpoint vertex pre-existing, This means another edge (referred to as the "old edge") was already
+        connected to the endpoint. Two sub-cases possible:
+        - Peak configuration: The endpoint forms a peak between the new and old edges (i.e., the other endpoints of the edges
+        are both above or both below the current endpoint). In this case, there is only one exterior trapezoid, which will
+        be adjacent to the trapezoid not trapped in the peak. The other trapezoid will have no exterior adjacency.
+        - Non-peak configuration: The endpoint lies between the other endpoints of the old and new edges. In this case,
+        two exterior trapezoids exist (left and right), which will connect to the new trapezoids in a straightforward manner
+        (left-to-left and right-to-right).
+
+        This method is tightly coupled with `manage_adjacent_trapezoids_after_edge_split`, which coordinates
+        the adjustment of adjacency relationships along the entire inserted edge.
+
+        Args:
+            edge (Edge): The edge being inserted into the trapezoidal decomposition.
+            end_trap_left (Trapezoid): The left trapezoid at the endpoint of the inserted edge.
+            end_trap_right (Trapezoid): The right trapezoid at the endpoint of the inserted edge.
+            end_just_inserted (bool): Indicates if the vertex at this endpoint was newly inserted.
+            top_end (bool): Indicates if the endpoint is the top (True) or bottom (False) of the edge.
+
+        Raises:
+            InconsistentTrapezoidNeighborhood: If the neighborhood configuration at the edge endpoint is invalid.
+        """
+
+        exterior_adjacent_traps = end_trap_right.get_adjacent_traps(top=top_end)
+
+        if end_just_inserted:
+            # only 1 exterior adjacent trapezoid and it needs to be adjacent for both
+            # but already adjacent for right
+            if len(exterior_adjacent_traps) != 1:
+                raise InconsistentTrapezoidNeighborhood
+
+            end_trap_left.set_adjacent_traps(
+                exterior_adjacent_traps.copy(), top=top_end
+            )
+            adjacent_trap = exterior_adjacent_traps[0]
+            adjacent_trap.set_adjacent_traps(
+                [end_trap_left, end_trap_right], top=not top_end
+            )
+
+            return
+
+        edge_relevant_end = Edge.get_edge_vertex(edge, top=top_end)
+        if (
+            Edge.get_edge_vertex(end_trap_left.left_edge, top=top_end)
+            == edge_relevant_end
+        ):  # left peak with an old edge
+            if len(exterior_adjacent_traps) != 1:
+                raise InconsistentTrapezoidNeighborhood
+
+            # nothing to do
+
+        elif (
+            Edge.get_edge_vertex(end_trap_right.right_edge, top=top_end)
+            == edge_relevant_end
+        ):  # right peak with an old edge
+            if len(exterior_adjacent_traps) != 1:
+                raise InconsistentTrapezoidNeighborhood
+
+            end_trap_left.set_adjacent_traps(exterior_adjacent_traps, top=top_end)
+            end_trap_right.set_adjacent_traps([], top=top_end)
+            replace(
+                exterior_adjacent_traps[0].get_adjacent_traps(top=not top_end),
+                end_trap_right,
+                end_trap_left,
+            )
+
+        else:  # the new edge just extend an old edge
+            if len(exterior_adjacent_traps) != 2:
+                raise InconsistentTrapezoidNeighborhood
+
+            left_adjacent, right_adjacent = exterior_adjacent_traps
+            end_trap_left.set_adjacent_traps([left_adjacent], top=top_end)
+            end_trap_right.set_adjacent_traps([right_adjacent], top=top_end)
+            replace(
+                left_adjacent.get_adjacent_traps(top=not top_end),
+                end_trap_right,
+                end_trap_left,
+            )
+
+    @staticmethod
+    def manage_adjacent_trapezoids_on_branch(
+        edge: Edge,
+        left_trap_A: Trapezoid,
+        right_trap_A: Trapezoid,
+        left_trap_B: Trapezoid,
+        right_trap_B: Trapezoid,
+        upward_branch: bool,
+    ) -> None:
+        """
+        Adjusts the adjacency relationships of trapezoids on a horizontal border with a "branch."
+
+        What I call a horizontal border with a "branch" here: Before the split, the trapezoid below
+        (or above) the horizontal border had two trapezoids above (or below) it, forming a "branch."
+        Determining the new adjacency relationships requires identifying whether the inserted edge
+        splits the left or right side of the branch.
+
+        Here we consider a branch opened in A and closed in B, which means that before the insertion
+        of the edge, there were two trapezoids on side A of the horizontal border and only one on side B
+        (which was adjacent to both trapezoids on side A).
+
+        Args:
+            edge (Edge): The edge being inserted into the trapezoidal decomposition.
+            left_trap_A (Trapezoid): The left trapezoid at the branch opening.
+            right_trap_A (Trapezoid): The right trapezoid at the branch opening.
+            left_trap_B (Trapezoid): The left trapezoid at the branch closing.
+            right_trap_B (Trapezoid): The right trapezoid at the branch closing.
+            upward_branch (bool): Indicates whether the branch is upward (True) or downward (False).
+
+        Raises:
+            InconsistentTrapezoidNeighborhood: If the neighborhood configuration at the branch is invalid.
+        """
+        if (
+            len(right_trap_A.get_adjacent_traps(top=not upward_branch)) != 1
+        ):  # as two vertices can be at the same height (because lexicographic order)
+            raise InconsistentTrapezoidNeighborhood
+
+        left_trap_A.set_adjacent_traps([left_trap_B], top=not upward_branch)
+
+        branch_point = right_trap_B.get_adjacent_traps(top=upward_branch)[
+            0
+        ].get_extreme_point(top=not upward_branch, right=True)
+
+        if edge.is_vertex_at_the_right(branch_point):
+            left_trap_B.set_adjacent_traps([left_trap_A], top=upward_branch)
+            return
+
+        additional_left_trap_A = right_trap_B.get_adjacent_traps(top=upward_branch)[0]
+
+        right_trap_A.set_adjacent_traps([right_trap_B], top=not upward_branch)
+        right_trap_B.set_adjacent_traps([right_trap_A], top=upward_branch)
+
+        left_trap_B.set_adjacent_traps(
+            [
+                additional_left_trap_A,
+                left_trap_A,
+            ],
+            top=upward_branch,
+        )
+        additional_left_trap_A.set_adjacent_traps([left_trap_B], top=not upward_branch)
 
     @staticmethod
     def merge_trapezoids_stack(trapezoids_stack: list[Trapezoid]) -> None:

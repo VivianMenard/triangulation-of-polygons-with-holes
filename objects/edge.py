@@ -25,23 +25,6 @@ class Edge:
             (end, start) if start > end else (start, end)
         )
 
-    @staticmethod
-    def get_edge_vertex(edge: Edge | None, top: bool) -> Vertex | None:
-        """
-        Retrieves the top or bottom vertex of a given edge, or None if the edge is None.
-
-        Args:
-            edge (Edge | None): The edge to retrieve the vertex from.
-            top (bool): If True, retrieves the top vertex; otherwise, the bottom vertex.
-
-        Returns:
-            Vertex | None: The requested vertex, or None if the edge is None.
-        """
-        if edge is None:
-            return None
-
-        return edge.get_vertex(top=top)
-
     @property
     def mid_point(self) -> Vertex:
         """
@@ -68,6 +51,20 @@ class Edge:
 
         return self.bottom_vertex
 
+    def is_vertex_at_the_right(self, vertex: Vertex) -> bool:
+        """
+        Determines if a given vertex is to the right of the edge at the vertex's y-coordinate.
+
+        Args:
+            vertex (Vertex): The vertex to check.
+
+        Returns:
+            bool: True if the vertex is to the right of the edge, False otherwise.
+        """
+        x_edge = self.get_x_by_y(vertex.y)
+
+        return vertex.x > x_edge
+
     def get_x_by_y(self, y: float) -> float:
         """
         Calculates the x-coordinate on the edge corresponding to a given y-coordinate.
@@ -92,16 +89,19 @@ class Edge:
         t = (y - bottom_y) / (top_y - bottom_y)
         return bottom_x + t * (top_x - bottom_x)
 
-    def is_vertex_at_the_right(self, vertex: Vertex) -> bool:
+    @staticmethod
+    def get_edge_vertex(edge: Edge | None, top: bool) -> Vertex | None:
         """
-        Determines if a given vertex is to the right of the edge at the vertex's y-coordinate.
+        Retrieves the top or bottom vertex of a given edge, or None if the edge is None.
 
         Args:
-            vertex (Vertex): The vertex to check.
+            edge (Edge | None): The edge to retrieve the vertex from.
+            top (bool): If True, retrieves the top vertex; otherwise, the bottom vertex.
 
         Returns:
-            bool: True if the vertex is to the right of the edge, False otherwise.
+            Vertex | None: The requested vertex, or None if the edge is None.
         """
-        x_edge = self.get_x_by_y(vertex.y)
+        if edge is None:
+            return None
 
-        return vertex.x > x_edge
+        return edge.get_vertex(top=top)

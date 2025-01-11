@@ -17,7 +17,6 @@ class MonotoneVertex:
 
     vertex: Vertex
     """The geometric vertex represented by this monotone vertex."""
-
     above: MonotoneVertex | None
     """The vertex directly above in the monotone structure, or None if this vertex is at the top of its chain."""
     below: MonotoneVertex | None

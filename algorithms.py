@@ -20,6 +20,32 @@ if TYPE_CHECKING:
     from objects import PolygonalArea
 
 
+def triangulate_polygonal_area(polygonal_area: PolygonalArea) -> list[Triangle]:
+    """
+    Triangulates a polygonal area.
+
+    This function first decomposes the polygonal area into trapezoids, then selects the
+    trapezoids that are inside, generates monotone mountains from the inside trapezoids
+    and then triangulate each monotone mountain to produce a list of triangles that cover
+    the polygonal area.
+
+    Args:
+        polygonal_area (PolygonalArea): The polygonal area to be triangulated.
+
+    Returns:
+        list[Triangle]: A list of triangles resulting from the triangulation of the polygonal area.
+    """
+    trapezoids = trapezoidation(polygonal_area)
+
+    inside_trapezoids = select_inside_trapezoids(trapezoids)
+
+    monotone_mountains = make_monotone_mountains(inside_trapezoids)
+
+    triangles = make_triangles(monotone_mountains)
+
+    return triangles
+
+
 def trapezoidation(polygonal_area: PolygonalArea) -> list[Trapezoid]:
     """
     Divides the 2D space into trapezoids according to the polygonal area.
@@ -71,51 +97,6 @@ def select_inside_trapezoids(all_trapezoids: list[Trapezoid]) -> list[Trapezoid]
     return [trap for trap in all_trapezoids if trap.is_inside]
 
 
-def group_vertices_by_mountain(
-    trapezoids: list[Trapezoid],
-) -> dict[Edge, dict[Vertex, Vertex]]:
-    """
-    Performs the first part of the transformation of a trapezoids partition into
-    a monotone mountains partition.
-
-    It iterates on all the trapezoids grouping vertices by monotone mountains.
-    The result of this step is a dictionnary that maps every mountain base edge with a dictionnary that gives
-    the successor of each vertex in the monotone chain.
-
-    Args:
-        trapezoids (list[Trapezoid]): A list of trapezoids partitioning the polygonal area.
-
-    Returns:
-        dict[Edge, dict[Vertex, Vertex]]: A dictionary mapping mountain base edges to a dictionnary that gives
-            the successor of each vertex in the monotone chain.
-
-    Raises:
-        InconsistentTrapezoid: If a trapezoid have an inconsistent structure.
-    """
-    above_vertex_by_base_edge: dict[Edge, dict[Vertex, Vertex]] = defaultdict(dict)
-
-    for trap in trapezoids:
-        mountain_bases: list[Edge] = []
-
-        for edge in [trap.left_edge, trap.right_edge]:
-            edge = cast(Edge, edge)
-            if (
-                trap.bottom_vertex != edge.bottom_vertex
-                or trap.top_vertex != edge.top_vertex
-            ):
-                mountain_bases.append(edge)
-
-        if not len(mountain_bases):
-            raise InconsistentTrapezoid
-
-        for mountain_base in mountain_bases:
-            above_vertex_by_base_edge[mountain_base][
-                cast(Vertex, trap.bottom_vertex)
-            ] = cast(Vertex, trap.top_vertex)
-
-    return above_vertex_by_base_edge
-
-
 def make_monotone_mountains(
     trapezoids: list[Trapezoid],
 ) -> list[MonotoneMountain]:
@@ -161,6 +142,72 @@ def make_monotone_mountains(
                 monotone_mountain_created = True
 
     return monotone_mountains
+
+
+def group_vertices_by_mountain(
+    trapezoids: list[Trapezoid],
+) -> dict[Edge, dict[Vertex, Vertex]]:
+    """
+    Performs the first part of the transformation of a trapezoids partition into
+    a monotone mountains partition.
+
+    It iterates on all the trapezoids grouping vertices by monotone mountains.
+    The result of this step is a dictionnary that maps every mountain base edge with a dictionnary that gives
+    the successor of each vertex in the monotone chain.
+
+    Args:
+        trapezoids (list[Trapezoid]): A list of trapezoids partitioning the polygonal area.
+
+    Returns:
+        dict[Edge, dict[Vertex, Vertex]]: A dictionary mapping mountain base edges to a dictionnary that gives
+            the successor of each vertex in the monotone chain.
+
+    Raises:
+        InconsistentTrapezoid: If a trapezoid have an inconsistent structure.
+    """
+    above_vertex_by_base_edge: dict[Edge, dict[Vertex, Vertex]] = defaultdict(dict)
+
+    for trap in trapezoids:
+        mountain_bases: list[Edge] = []
+
+        for edge in [trap.left_edge, trap.right_edge]:
+            edge = cast(Edge, edge)
+            if (
+                trap.bottom_vertex != edge.bottom_vertex
+                or trap.top_vertex != edge.top_vertex
+            ):
+                mountain_bases.append(edge)
+
+        if not len(mountain_bases):
+            raise InconsistentTrapezoid
+
+        for mountain_base in mountain_bases:
+            above_vertex_by_base_edge[mountain_base][
+                cast(Vertex, trap.bottom_vertex)
+            ] = cast(Vertex, trap.top_vertex)
+
+    return above_vertex_by_base_edge
+
+
+def make_triangles(monotone_mountains: list[MonotoneMountain]) -> list[Triangle]:
+    """
+    Generates triangles from a list of monotone mountains.
+
+    This function takes a list of monotone mountains and applies triangulation to each one,
+    returning a list of all the resulting triangles.
+
+    Args:
+        monotone_mountains (list[MonotoneMountain]): The list of monotone mountains to be triangulated.
+
+    Returns:
+        list[Triangle]: A list of triangles created from the monotone mountains.
+    """
+    triangles: list[Triangle] = []
+
+    for monotone_mountain in monotone_mountains:
+        triangulate_monotone_mountain(monotone_mountain, triangles)
+
+    return triangles
 
 
 def triangulate_monotone_mountain(
@@ -237,50 +284,3 @@ def triangulate_monotone_mountain(
             triangles,
             angle_threshold=angle_closer_to_threshold + ANGLE_EPSILON,
         )
-
-
-def make_triangles(monotone_mountains: list[MonotoneMountain]) -> list[Triangle]:
-    """
-    Generates triangles from a list of monotone mountains.
-
-    This function takes a list of monotone mountains and applies triangulation to each one,
-    returning a list of all the resulting triangles.
-
-    Args:
-        monotone_mountains (list[MonotoneMountain]): The list of monotone mountains to be triangulated.
-
-    Returns:
-        list[Triangle]: A list of triangles created from the monotone mountains.
-    """
-    triangles: list[Triangle] = []
-
-    for monotone_mountain in monotone_mountains:
-        triangulate_monotone_mountain(monotone_mountain, triangles)
-
-    return triangles
-
-
-def triangulate_polygonal_area(polygonal_area: PolygonalArea) -> list[Triangle]:
-    """
-    Triangulates a polygonal area.
-
-    This function first decomposes the polygonal area into trapezoids, then selects the
-    trapezoids that are inside, generates monotone mountains from the inside trapezoids
-    and then triangulate each monotone mountain to produce a list of triangles that cover
-    the polygonal area.
-
-    Args:
-        polygonal_area (PolygonalArea): The polygonal area to be triangulated.
-
-    Returns:
-        list[Triangle]: A list of triangles resulting from the triangulation of the polygonal area.
-    """
-    trapezoids = trapezoidation(polygonal_area)
-
-    inside_trapezoids = select_inside_trapezoids(trapezoids)
-
-    monotone_mountains = make_monotone_mountains(inside_trapezoids)
-
-    triangles = make_triangles(monotone_mountains)
-
-    return triangles

@@ -159,26 +159,6 @@ class Node:
 
         return self.__right_child
 
-    def __make_sure_it_is_a_trapezoid(self) -> None:
-        """
-        Ensures that the node is a trapezoid node.
-
-        Raises:
-            NotATrapezoid: If the node type is not TRAPEZOID.
-        """
-        if self.__node_type != NodeType.TRAPEZOID:
-            raise NotATrapezoid
-
-    def __make_sure_it_is_the_root(self) -> None:
-        """
-        Ensures that the node is the root node of the search structure.
-
-        Raises:
-            NotTheRoot: If the node is the the root node.
-        """
-        if len(self.__parents):
-            raise NotTheRoot
-
     def replace_by_another_node_in_tree(self, new_node: Node) -> None:
         """
         Redirects all parent pointers that refer to this node (as left_child or right_child) to a new node.
@@ -212,61 +192,6 @@ class Node:
 
         new_node.__parents.extend(self.__parents)
 
-    def __split_by_vertex(self, vertex: Vertex) -> None:
-        """
-        Splits the trapezoid represented by this node into two trapezoids using a vertex.
-
-        This operation modifies the current node to represent the vertex that splits the trapezoid.
-        Two new child nodes are created: the left child represents the trapezoid below the vertex,
-        and the right child represents the trapezoid above the vertex.
-
-        Args:
-            vertex (Vertex): The vertex used to split the trapezoid.
-
-        Raises:
-            NotATrapezoid: If this node does not represent a trapezoid.
-        """
-        self.__make_sure_it_is_a_trapezoid()
-
-        bottom_trapezoid, top_trapezoid = self.trapezoid.split_by_vertex(vertex)
-
-        self.__node_type = NodeType.VERTEX
-        self.__associated_obj = vertex
-
-        self.__left_child = Node(trapezoid=bottom_trapezoid, parent=self)
-        self.__right_child = Node(trapezoid=top_trapezoid, parent=self)
-
-    def __split_by_edge(
-        self, edge: Edge, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
-    ) -> None:
-        """
-        Splits the trapezoid represented by this node into two trapezoids using an edge.
-
-        This operation modifies the current node to represent the edge that splits the trapezoid.
-        Two new child nodes are created: the left child represents the trapezoid to the left of the edge,
-        and the right child represents the trapezoid to the right of the edge. The newly created trapezoids
-        are also recorded in the provided list of trapezoid pairs for further operations.
-
-        Args:
-            edge (Edge): The edge used to split the trapezoid.
-            created_trap_couples (list[tuple[Trapezoid, Trapezoid]]): A list to which the pair of newly
-                created trapezoids (left and right) will be appended.
-
-        Raises:
-            NotATrapezoid: If this node does not represent a trapezoid.
-        """
-        self.__make_sure_it_is_a_trapezoid()
-
-        left_trapezoid, right_trapezoid = self.trapezoid.split_by_edge(edge)
-
-        created_trap_couples.append((left_trapezoid, right_trapezoid))
-
-        self.__node_type = NodeType.EDGE
-        self.__associated_obj = edge
-
-        self.__left_child = Node(trapezoid=left_trapezoid, parent=self)
-        self.__right_child = Node(trapezoid=right_trapezoid, parent=self)
-
     def insert_vertex(self, vertex: Vertex) -> None:
         """
         Inserts a vertex into the trapezoidal decomposition structure.
@@ -287,100 +212,6 @@ class Node:
 
         area = self.__search_area_containing_vertex(vertex)
         area.__split_by_vertex(vertex)
-
-    def __search_area_containing_vertex(self, vertex: Vertex) -> Node:
-        """
-        Finds the trapezoid node in the search structure that contains the given vertex.
-
-        This method navigates the trapezoidal decomposition search structure starting from the current
-        node, following the appropriate child nodes based on the type of the current node (vertex or edge)
-        and the position of the vertex relative to the related vertex/edge.
-
-        Args:
-            vertex (Vertex): The vertex for which the containing trapezoid is to be found.
-
-        Returns:
-            Node: The trapezoid node containing the given vertex.
-        """
-        if self.__node_type == NodeType.TRAPEZOID:
-            return self
-
-        relevant_child: Node = self.left_child
-
-        if (self.__node_type == NodeType.VERTEX and vertex > self.vertex) or (
-            self.__node_type == NodeType.EDGE
-            and self.edge.is_vertex_at_the_right(vertex)
-        ):
-            relevant_child = self.right_child
-
-        return relevant_child.__search_area_containing_vertex(vertex)
-
-    def __find_nodes_to_split_in_direction(
-        self, edge: Edge, up_direction: bool
-    ) -> list[Node]:
-        """
-        Finds the sequence of nodes to split along a given direction for an edge insertion.
-
-        This method identifies the nodes in the trapezoidal decomposition that need to be split
-        when an edge is being inserted, starting from the current node and moving either upwards
-        or downwards.
-
-        Details:
-            - The method begins with the trapezoid associated with the current node.
-            - It iteratively moves to adjacent trapezoids in the specified direction until the endpoint
-            of the edge is reached.
-            - If two adjacent trapezoids are found in the specified direction, the method determines the
-            correct trapezoid to follow based on the edge's position relative to the rightmost point of the
-            left trapezoid.
-            - For each traversed trapezoid, its associated node is added to the list of nodes to be split.
-
-        Args:
-            edge (Edge): The edge being inserted into the trapezoidal decomposition.
-            up_direction (bool): Direction of traversal. If True, moves upwards in the decomposition;
-                otherwise, moves downwards.
-
-        Returns:
-            list[Node]: A list of nodes that need to be split along the specified direction.
-
-        Raises:
-            InconsistentTrapezoidNeighborhood: If the trapezoid neighborhood configuration is invalid.
-        """
-        nodes_to_split: list[Node] = []
-        current_trap: Trapezoid = self.trapezoid
-
-        def is_the_end_of_edge(current_trap):
-            relevant_vertex_attr = "top_vertex" if up_direction else "bottom_vertex"
-            return getattr(current_trap, relevant_vertex_attr) == getattr(
-                edge, relevant_vertex_attr
-            )
-
-        while not is_the_end_of_edge(current_trap):
-            next_traps_in_direction = current_trap.get_adjacent_traps(top=up_direction)
-
-            match len(next_traps_in_direction):
-                case 1:
-                    current_trap = next_traps_in_direction[0]
-
-                case 2:
-                    left_trap_in_direction = next_traps_in_direction[0]
-                    left_trap_relevant_rightmost_pt = (
-                        left_trap_in_direction.get_extreme_point(
-                            top=not up_direction, right=True
-                        )
-                    )
-                    trap_index = (
-                        0
-                        if edge.is_vertex_at_the_right(left_trap_relevant_rightmost_pt)
-                        else 1
-                    )
-                    current_trap = next_traps_in_direction[trap_index]
-
-                case _:
-                    raise InconsistentTrapezoidNeighborhood
-
-            nodes_to_split.append(current_trap.associated_node)
-
-        return nodes_to_split
 
     def insert_edge(
         self,
@@ -465,3 +296,172 @@ class Node:
             self.right_child.get_all_traps(trapezoids_acc)
 
         return trapezoids_acc
+
+    def __search_area_containing_vertex(self, vertex: Vertex) -> Node:
+        """
+        Finds the trapezoid node in the search structure that contains the given vertex.
+
+        This method navigates the trapezoidal decomposition search structure starting from the current
+        node, following the appropriate child nodes based on the type of the current node (vertex or edge)
+        and the position of the vertex relative to the related vertex/edge.
+
+        Args:
+            vertex (Vertex): The vertex for which the containing trapezoid is to be found.
+
+        Returns:
+            Node: The trapezoid node containing the given vertex.
+        """
+        if self.__node_type == NodeType.TRAPEZOID:
+            return self
+
+        relevant_child: Node = self.left_child
+
+        if (self.__node_type == NodeType.VERTEX and vertex > self.vertex) or (
+            self.__node_type == NodeType.EDGE
+            and self.edge.is_vertex_at_the_right(vertex)
+        ):
+            relevant_child = self.right_child
+
+        return relevant_child.__search_area_containing_vertex(vertex)
+
+    def __split_by_vertex(self, vertex: Vertex) -> None:
+        """
+        Splits the trapezoid represented by this node into two trapezoids using a vertex.
+
+        This operation modifies the current node to represent the vertex that splits the trapezoid.
+        Two new child nodes are created: the left child represents the trapezoid below the vertex,
+        and the right child represents the trapezoid above the vertex.
+
+        Args:
+            vertex (Vertex): The vertex used to split the trapezoid.
+
+        Raises:
+            NotATrapezoid: If this node does not represent a trapezoid.
+        """
+        self.__make_sure_it_is_a_trapezoid()
+
+        bottom_trapezoid, top_trapezoid = self.trapezoid.split_by_vertex(vertex)
+
+        self.__node_type = NodeType.VERTEX
+        self.__associated_obj = vertex
+
+        self.__left_child = Node(trapezoid=bottom_trapezoid, parent=self)
+        self.__right_child = Node(trapezoid=top_trapezoid, parent=self)
+
+    def __split_by_edge(
+        self, edge: Edge, created_trap_couples: list[tuple[Trapezoid, Trapezoid]]
+    ) -> None:
+        """
+        Splits the trapezoid represented by this node into two trapezoids using an edge.
+
+        This operation modifies the current node to represent the edge that splits the trapezoid.
+        Two new child nodes are created: the left child represents the trapezoid to the left of the edge,
+        and the right child represents the trapezoid to the right of the edge. The newly created trapezoids
+        are also recorded in the provided list of trapezoid pairs for further operations.
+
+        Args:
+            edge (Edge): The edge used to split the trapezoid.
+            created_trap_couples (list[tuple[Trapezoid, Trapezoid]]): A list to which the pair of newly
+                created trapezoids (left and right) will be appended.
+
+        Raises:
+            NotATrapezoid: If this node does not represent a trapezoid.
+        """
+        self.__make_sure_it_is_a_trapezoid()
+
+        left_trapezoid, right_trapezoid = self.trapezoid.split_by_edge(edge)
+
+        created_trap_couples.append((left_trapezoid, right_trapezoid))
+
+        self.__node_type = NodeType.EDGE
+        self.__associated_obj = edge
+
+        self.__left_child = Node(trapezoid=left_trapezoid, parent=self)
+        self.__right_child = Node(trapezoid=right_trapezoid, parent=self)
+
+    def __find_nodes_to_split_in_direction(
+        self, edge: Edge, up_direction: bool
+    ) -> list[Node]:
+        """
+        Finds the sequence of nodes to split along a given direction for an edge insertion.
+
+        This method identifies the nodes in the trapezoidal decomposition that need to be split
+        when an edge is being inserted, starting from the current node and moving either upwards
+        or downwards.
+
+        Details:
+            - The method begins with the trapezoid associated with the current node.
+            - It iteratively moves to adjacent trapezoids in the specified direction until the endpoint
+            of the edge is reached.
+            - If two adjacent trapezoids are found in the specified direction, the method determines the
+            correct trapezoid to follow based on the edge's position relative to the rightmost point of the
+            left trapezoid.
+            - For each traversed trapezoid, its associated node is added to the list of nodes to be split.
+
+        Args:
+            edge (Edge): The edge being inserted into the trapezoidal decomposition.
+            up_direction (bool): Direction of traversal. If True, moves upwards in the decomposition;
+                otherwise, moves downwards.
+
+        Returns:
+            list[Node]: A list of nodes that need to be split along the specified direction.
+
+        Raises:
+            InconsistentTrapezoidNeighborhood: If the trapezoid neighborhood configuration is invalid.
+        """
+        nodes_to_split: list[Node] = []
+        current_trap: Trapezoid = self.trapezoid
+
+        def is_the_end_of_edge(current_trap):
+            relevant_vertex_attr = "top_vertex" if up_direction else "bottom_vertex"
+            return getattr(current_trap, relevant_vertex_attr) == getattr(
+                edge, relevant_vertex_attr
+            )
+
+        while not is_the_end_of_edge(current_trap):
+            next_traps_in_direction = current_trap.get_adjacent_traps(top=up_direction)
+
+            match len(next_traps_in_direction):
+                case 1:
+                    current_trap = next_traps_in_direction[0]
+
+                case 2:
+                    left_trap_in_direction = next_traps_in_direction[0]
+                    left_trap_relevant_rightmost_pt = (
+                        left_trap_in_direction.get_extreme_point(
+                            top=not up_direction, right=True
+                        )
+                    )
+                    trap_index = (
+                        0
+                        if edge.is_vertex_at_the_right(left_trap_relevant_rightmost_pt)
+                        else 1
+                    )
+                    current_trap = next_traps_in_direction[trap_index]
+
+                case _:
+                    raise InconsistentTrapezoidNeighborhood
+
+            nodes_to_split.append(current_trap.associated_node)
+
+        return nodes_to_split
+
+    def __make_sure_it_is_a_trapezoid(self) -> None:
+        """
+        Ensures that the node is a trapezoid node.
+
+        Raises:
+            NotATrapezoid: If the node type is not TRAPEZOID.
+        """
+        if self.__node_type != NodeType.TRAPEZOID:
+            raise NotATrapezoid
+
+    def __make_sure_it_is_the_root(self) -> None:
+        """
+        Ensures that the node is the root node of the search structure.
+
+        Raises:
+            NotTheRoot: If the node is the the root node.
+        """
+        if len(self.__parents):
+            raise NotTheRoot
